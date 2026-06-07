@@ -58,6 +58,14 @@ const DOM = {
   addNewBtn:    $('#add-new-btn'),
   emptyAddBtn:  $('#empty-add-btn'),
 
+  // Guestbook
+  navGuestbook:   $('#nav-guestbook'),
+  guestbookView:  $('#guestbook-view'),
+  guestbookLoading: $('#guestbook-loading'),
+  guestbookEmpty: $('#guestbook-empty'),
+  guestbookCardsGrid: $('#guestbook-cards-grid'),
+  guestbookSearchInput: $('#guestbook-search-input'),
+
   // Stats
   statTotal:    $('#stat-total'),
   statVisible:  $('#stat-visible'),
@@ -244,11 +252,17 @@ function navigateTo(view) {
   const activeNav = $(`.nav-item[data-view="${view}"]`);
   if (activeNav) activeNav.classList.add('active');
 
+  // Hide all panels
+  DOM.formView.hidden = true;
+  DOM.listView.hidden = true;
+  if (DOM.guestbookView) DOM.guestbookView.hidden = true;
+
   if (view === 'form') {
     DOM.formView.hidden = false;
-    DOM.listView.hidden = true;
+  } else if (view === 'guestbook') {
+    if (DOM.guestbookView) DOM.guestbookView.hidden = false;
+    loadGuestbook();
   } else {
-    DOM.formView.hidden = true;
     DOM.listView.hidden = false;
     loadTestimonials();
   }
@@ -262,6 +276,7 @@ DOM.navNew.addEventListener('click', () => {
   navigateTo('form');
 });
 DOM.navList.addEventListener('click', () => navigateTo('list'));
+DOM.navGuestbook.addEventListener('click', () => navigateTo('guestbook'));
 DOM.addNewBtn.addEventListener('click', () => {
   resetForm();
   navigateTo('form');
@@ -743,6 +758,155 @@ document.addEventListener('keydown', (e) => {
     }
     closeSidebar();
   }
+});
+
+// ═══════════════════════════════════════════════════════════
+// GUESTBOOK MODERATION LOGIC
+// ═══════════════════════════════════════════════════════════
+let allGuestbookMessages = [];
+
+async function loadGuestbook() {
+  if (!DOM.guestbookLoading) return;
+  DOM.guestbookLoading.hidden = false;
+  DOM.guestbookEmpty.hidden = true;
+  DOM.guestbookCardsGrid.innerHTML = '';
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('guestbook')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    allGuestbookMessages = data || [];
+    renderGuestbookCards(allGuestbookMessages);
+
+  } catch (err) {
+    showToast('error', 'Load Guestbook Failed', err.message);
+  } finally {
+    DOM.guestbookLoading.hidden = true;
+  }
+}
+
+function renderGuestbookCards(messages) {
+  DOM.guestbookCardsGrid.innerHTML = '';
+
+  if (!messages.length) {
+    DOM.guestbookEmpty.hidden = false;
+    return;
+  }
+
+  DOM.guestbookEmpty.hidden = true;
+
+  messages.forEach((msg) => {
+    const card = document.createElement('div');
+    card.className = `guestbook-card ${msg.is_approved ? 'approved-card' : 'pending-card'}`;
+
+    const dateStr = new Date(msg.created_at).toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    card.innerHTML = `
+      <div class="guestbook-card-header">
+        <div class="guestbook-card-info">
+          <span class="guestbook-card-author">${escapeHtml(msg.name)}</span>
+          <span class="guestbook-card-timestamp">${dateStr}</span>
+        </div>
+        <span class="guestbook-card-status ${msg.is_approved ? 'approved' : 'pending'}">
+          ${msg.is_approved ? 'Approved' : 'Pending'}
+        </span>
+      </div>
+      <div class="guestbook-card-body">
+        ${escapeHtml(msg.message)}
+      </div>
+      <div class="guestbook-card-actions">
+        <button class="btn btn-sm ${msg.is_approved ? 'btn-ghost' : 'btn-primary'} btn-toggle-approve" data-id="${msg.id}" data-approved="${msg.is_approved}">
+          <i class="fa-solid ${msg.is_approved ? 'fa-eye-slash' : 'fa-check'}"></i>
+          <span>${msg.is_approved ? 'Hide' : 'Approve'}</span>
+        </button>
+        <button class="btn btn-sm btn-danger btn-delete-msg" data-id="${msg.id}">
+          <i class="fa-solid fa-trash-can"></i>
+          <span>Delete</span>
+        </button>
+      </div>
+    `;
+
+    DOM.guestbookCardsGrid.appendChild(card);
+  });
+
+  // Attach event listeners to guestbook actions
+  DOM.guestbookCardsGrid.querySelectorAll('.btn-toggle-approve').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const btnEl = e.currentTarget;
+      const id = btnEl.getAttribute('data-id');
+      const approved = btnEl.getAttribute('data-approved') === 'true';
+      await toggleGuestbookApproval(id, approved);
+    });
+  });
+
+  DOM.guestbookCardsGrid.querySelectorAll('.btn-delete-msg').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const id = e.currentTarget.getAttribute('data-id');
+      confirmDeleteGuestbookMessage(id);
+    });
+  });
+}
+
+async function toggleGuestbookApproval(id, currentApproved) {
+  try {
+    const { error } = await supabaseClient
+      .from('guestbook')
+      .update({ is_approved: !currentApproved })
+      .eq('id', id);
+
+    if (error) throw error;
+
+    showToast('success', 'Status Updated', `Message status successfully changed.`);
+    loadGuestbook();
+  } catch (err) {
+    showToast('error', 'Update Failed', err.message);
+  }
+}
+
+async function confirmDeleteGuestbookMessage(id) {
+  const confirmed = await showConfirm(
+    'Delete Message?',
+    'Apakah Anda yakin ingin menghapus pesan ini secara permanen dari Guestbook?',
+    'Delete'
+  );
+  if (confirmed) {
+    try {
+      const { error } = await supabaseClient
+        .from('guestbook')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      showToast('success', 'Deleted Successfully', 'Message deleted from guestbook.');
+      loadGuestbook();
+    } catch (err) {
+      showToast('error', 'Delete Failed', err.message);
+    }
+  }
+}
+
+DOM.guestbookSearchInput.addEventListener('input', () => {
+  const q = DOM.guestbookSearchInput.value.toLowerCase().trim();
+  if (!q) {
+    renderGuestbookCards(allGuestbookMessages);
+    return;
+  }
+  const filtered = allGuestbookMessages.filter(msg =>
+    (msg.name || '').toLowerCase().includes(q) ||
+    (msg.message || '').toLowerCase().includes(q)
+  );
+  renderGuestbookCards(filtered);
 });
 
 // ═══════════════════════════════════════════════════════════

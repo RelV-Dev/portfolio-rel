@@ -1123,3 +1123,100 @@ select option { background: #1a1a1f; color: var(--text-main); }
   .stats-bar { grid-template-columns: 1fr; }
   .stat-card { gap: 10px; padding: 12px; }
 }
+
+/* Guestbook Moderation Cards */
+.guestbook-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  transition: var(--transition);
+}
+
+.guestbook-card:hover {
+  border-color: rgba(188, 19, 254, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.guestbook-card.pending-card {
+  border-left: 4px solid var(--warning);
+}
+
+.guestbook-card.approved-card {
+  border-left: 4px solid var(--tertiary);
+}
+
+.guestbook-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 10px;
+}
+
+.guestbook-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.guestbook-card-author {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.guestbook-card-timestamp {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.guestbook-card-status {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.guestbook-card-status.pending {
+  background: rgba(255, 165, 0, 0.15);
+  color: var(--warning);
+  border: 1px solid rgba(255, 165, 0, 0.3);
+}
+
+.guestbook-card-status.approved {
+  background: rgba(0, 255, 157, 0.15);
+  color: var(--tertiary);
+  border: 1px solid rgba(0, 255, 157, 0.3);
+}
+
+.guestbook-card-body {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.6;
+  word-break: break-word;
+  flex: 1;
+}
+
+.guestbook-card-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 15px;
+}
+
+.guestbook-card-actions .btn {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  justify-content: center;
+}

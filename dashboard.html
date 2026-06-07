@@ -90,6 +90,10 @@
           <i class="fa-solid fa-clipboard-list"></i>
           <span>List All</span>
         </button>
+        <button class="nav-item" data-view="guestbook" id="nav-guestbook">
+          <i class="fa-solid fa-comments"></i>
+          <span>Guestbook</span>
+        </button>
       </nav>
 
       <div class="sidebar-footer">
@@ -334,6 +338,36 @@
           </div>
           <!-- Cards Container -->
           <div class="cards-grid" id="cards-grid"></div>
+        </div>
+      </div>
+
+      <!-- ═══════ GUESTBOOK VIEW ═══════ -->
+      <div id="guestbook-view" class="content-panel" hidden>
+        <div class="panel-header">
+          <h2><i class="fa-solid fa-comments"></i> Guestbook Messages</h2>
+          <div class="panel-actions">
+            <div class="search-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="guestbook-search-input" placeholder="Search…">
+            </div>
+          </div>
+        </div>
+
+        <!-- Guestbook Messages List -->
+        <div class="testimonials-list" id="guestbook-list-container">
+          <!-- Loading -->
+          <div class="loading-state" id="guestbook-loading">
+            <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+            <p>Loading messages…</p>
+          </div>
+          <!-- Empty State -->
+          <div class="empty-state" id="guestbook-empty" hidden>
+            <i class="fa-solid fa-comments fa-3x"></i>
+            <h3>No messages yet</h3>
+            <p>Visitor submissions will appear here for moderation.</p>
+          </div>
+          <!-- Grid Container -->
+          <div class="cards-grid" id="guestbook-cards-grid"></div>
         </div>
       </div>
 
