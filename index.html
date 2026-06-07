@@ -4097,7 +4097,7 @@
             <div class="swiper-slide">
               <div class="testimonial-card" data-testimonial='${JSON.stringify(t).replace(/'/g, "&#39;")}'>
                 <div class="testimonial-img-wrapper">
-                  <img src="${t.project_proof_url}" alt="${t.project_title} - Project proof" loading="lazy">
+                  <img src="${t.project_proof}" alt="${t.project_title} - Project proof" loading="lazy">
                   <div class="testimonial-img-overlay">
                     <span class="testimonial-category-badge" style="background:${catColor.bg};color:${catColor.color};border-color:${catColor.border}">${t.category}</span>
                   </div>
@@ -4156,18 +4156,21 @@
 
       body.innerHTML = `
         <div class="lightbox-images">
-          <div class="lightbox-img-item" onclick="openFullImg('${t.transfer_proof_url}')">
-            <img src="${t.transfer_proof_url}" alt="Transfer proof" loading="lazy">
+          ${t.transfer_proof ? `
+          <div class="lightbox-img-item" onclick="openFullImg('${t.transfer_proof}')">
+            <img src="${t.transfer_proof}" alt="Transfer proof" loading="lazy">
             <span class="lightbox-img-label">Transfer Proof</span>
-          </div>
-          <div class="lightbox-img-item" onclick="openFullImg('${t.project_proof_url}')">
-            <img src="${t.project_proof_url}" alt="Project proof" loading="lazy">
+          </div>` : ''}
+          ${t.project_proof ? `
+          <div class="lightbox-img-item" onclick="openFullImg('${t.project_proof}')">
+            <img src="${t.project_proof}" alt="Project proof" loading="lazy">
             <span class="lightbox-img-label">Project Proof</span>
-          </div>
-          <div class="lightbox-img-item" onclick="openFullImg('${t.chat_screenshot_url}')">
-            <img src="${t.chat_screenshot_url}" alt="Chat screenshot" loading="lazy">
+          </div>` : ''}
+          ${t.chat_screenshot ? `
+          <div class="lightbox-img-item" onclick="openFullImg('${t.chat_screenshot}')">
+            <img src="${t.chat_screenshot}" alt="Chat screenshot" loading="lazy">
             <span class="lightbox-img-label">Chat Screenshot</span>
-          </div>
+          </div>` : ''}
         </div>
 
         <div class="lightbox-details">
