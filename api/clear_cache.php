@@ -8,7 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
-require_once 'config.php';
+require_once __DIR__ . '/../config.php';
 
 if (isset($_SERVER['VERCEL'])) {
     echo json_encode(['success' => true, 'message' => 'Vercel cache bypassed/cleared (using Edge Caching).']);

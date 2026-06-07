@@ -1,23 +1,23 @@
 {
   "functions": {
-    "index.php": {
+    "api/index.php": {
       "runtime": "vercel-php@0.9.0"
     },
-    "clear_cache.php": {
+    "api/clear_cache.php": {
       "runtime": "vercel-php@0.9.0"
     },
-    "info.php": {
+    "api/info.php": {
       "runtime": "vercel-php@0.9.0"
     }
   },
   "routes": [
     {
       "src": "/clear_cache.php",
-      "dest": "/clear_cache.php"
+      "dest": "/api/clear_cache.php"
     },
     {
       "src": "/info.php",
-      "dest": "/info.php"
+      "dest": "/api/info.php"
     },
     {
       "src": "/dashboard",
@@ -45,7 +45,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/index.php"
+      "dest": "/api/index.php"
     }
   ]
 }
