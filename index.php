@@ -181,7 +181,7 @@ function getPlaceholderColor($icon_type) {
           "@id" => "https://relv.biz.id/#person",
           "name" => "Farel Putra Firmansyah",
           "url" => "https://relv.biz.id",
-          "image" => "https://data-id-card.vercel.app/image/Farel.jpg",
+          "image" => "https://res.cloudinary.com/dvpq5fsef/image/upload/c_fill,g_auto,w_600,h_600,q_auto,f_auto/v1780844527/dvpyazydsd46jzrvu6bq.webp",
           "description" => "Student developer, tech enthusiast, and competitive programmer with experience in web development, IoT systems, data science, and visual design.",
           "knowsAbout" => [
             "Web Development", "JavaScript", "Next.js", "Python", "C++", "SQL", "Firebase", "Supabase",
@@ -298,11 +298,13 @@ function getPlaceholderColor($icon_type) {
     ?>
   </script>
   
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
   
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
   
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet" media="print" onload="this.media='all'">
 
 
 
@@ -3620,7 +3622,7 @@ function getPlaceholderColor($icon_type) {
       <div class="hero-image-container" data-aos="fade-left" data-aos-duration="1000">
         <div class="image-wrapper">
           <div class="image-glow"></div>
-          <img src="https://data-id-card.vercel.app/image/Farel.jpg" alt="Farel Putra" class="profile-img">
+          <img src="https://res.cloudinary.com/dvpq5fsef/image/upload/c_fill,g_auto,w_400,h_400,q_auto,f_auto/v1780844527/dvpyazydsd46jzrvu6bq.webp" alt="Farel Putra" class="profile-img">
         </div>
       </div>
     </div>
@@ -3950,7 +3952,7 @@ function getPlaceholderColor($icon_type) {
       
       <div class="chat-messages" id="chatMessages">
         <div class="message bot" id="welcomeMsg">
-          <img src="https://data-id-card.vercel.app/image/Farel.jpg" alt="Bot" class="bot-avatar">
+          <img src="https://res.cloudinary.com/dvpq5fsef/image/upload/c_fill,g_auto,w_100,h_100,q_auto,f_auto/v1780844527/dvpyazydsd46jzrvu6bq.webp" alt="Bot" class="bot-avatar">
           <div class="bot-text-content">
             Hi! 👋 Saya asisten virtual Farel.<br>
             Silakan tanya apa saja tentang project, skill, atau pengalaman Farel!
@@ -4288,7 +4290,7 @@ function getPlaceholderColor($icon_type) {
         localStorage.removeItem(STORAGE_KEY);
         chatMessages.innerHTML = `
         <div class="message bot" id="welcomeMsg">
-            <img src="https://data-id-card.vercel.app/image/Farel.jpg" alt="Bot" class="bot-avatar">
+            <img src="https://res.cloudinary.com/dvpq5fsef/image/upload/c_fill,g_auto,w_100,h_100,q_auto,f_auto/v1780844527/dvpyazydsd46jzrvu6bq.webp" alt="Bot" class="bot-avatar">
             <div class="bot-text-content">History dihapus. Mari mulai obrolan baru! 🚀</div>
         </div>`;
       }
@@ -4380,7 +4382,7 @@ function getPlaceholderColor($icon_type) {
         if (sender === 'user') {
           msgDiv.textContent = text;
         } else {
-          const avatar = `<img src="https://data-id-card.vercel.app/image/Farel.jpg" alt="Bot" class="bot-avatar">`;
+          const avatar = `<img src="https://res.cloudinary.com/dvpq5fsef/image/upload/c_fill,g_auto,w_100,h_100,q_auto,f_auto/v1780844527/dvpyazydsd46jzrvu6bq.webp" alt="Bot" class="bot-avatar">`;
           const content = `<div class="bot-text-content">${formatText(text)}</div>`;
           msgDiv.innerHTML = avatar + content;
         }
