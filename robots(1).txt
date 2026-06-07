@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+
+# Allow important assets
+Allow: /assets/
+Allow: /images/
+Allow: /fonts/
+
+# Block unnecessary files
+Disallow: /api/
+Disallow: /private/
+Disallow: /*.json$
+
+# Sitemap location
+Sitemap: https://relv.biz.id/sitemap.xml
