@@ -1220,3 +1220,89 @@ select option { background: #1a1a1f; color: var(--text-main); }
   font-size: 0.8rem;
   justify-content: center;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   GALLERY MANAGEMENT STYLES
+   ═══════════════════════════════════════════════════════════ */
+.gallery-modal-card {
+  max-width: 600px !important;
+  width: 95% !important;
+  text-align: left !important;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.gallery-modal-card h3 {
+  font-size: 1.3rem !important;
+  margin-bottom: 0 !important;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 12px;
+}
+
+.btn-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.btn-close:hover {
+  color: var(--text-color);
+}
+
+.gallery-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 15px;
+}
+
+.gallery-card-actions .btn {
+  padding: 6px 10px;
+  font-size: 0.75rem;
+}
+
+.gallery-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.gallery-card-meta .badge {
+  font-size: 0.65rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.gallery-card-meta .badge.category-projects {
+  background: rgba(0, 243, 255, 0.1);
+  color: var(--primary);
+  border-color: rgba(0, 243, 255, 0.2);
+}
+
+.gallery-card-meta .badge.category-awards {
+  background: rgba(188, 19, 254, 0.1);
+  color: var(--secondary);
+  border-color: rgba(188, 19, 254, 0.2);
+}
+
+.gallery-card-meta .badge.category-certificates {
+  background: rgba(0, 255, 157, 0.1);
+  color: var(--tertiary);
+  border-color: rgba(0, 255, 157, 0.2);
+}
+

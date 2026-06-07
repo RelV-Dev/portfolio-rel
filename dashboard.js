@@ -88,6 +88,20 @@ const DOM = {
   toastContainer: $('#toast-container'),
 };
 
+// Extend DOM Cache with Gallery Elements
+DOM.navGallery = $('#nav-gallery');
+DOM.galleryView = $('#gallery-view');
+DOM.galleryLoading = $('#gallery-loading');
+DOM.galleryEmpty = $('#gallery-empty');
+DOM.galleryCardsGrid = $('#gallery-cards-grid');
+DOM.galleryAddBtn = $('#gallery-add-btn');
+DOM.galleryModal = $('#gallery-modal');
+DOM.galleryModalClose = $('#gallery-modal-close');
+DOM.galleryModalCancel = $('#gallery-modal-cancel');
+DOM.galleryForm = $('#gallery-form');
+DOM.galleryEditId = $('#gallery-edit-id');
+DOM.galleryModalTitle = $('#gallery-modal-title');
+
 // ───── State ─────
 let allTestimonials = [];
 let confirmCallback = null;
@@ -256,12 +270,16 @@ function navigateTo(view) {
   DOM.formView.hidden = true;
   DOM.listView.hidden = true;
   if (DOM.guestbookView) DOM.guestbookView.hidden = true;
+  if (DOM.galleryView) DOM.galleryView.hidden = true;
 
   if (view === 'form') {
     DOM.formView.hidden = false;
   } else if (view === 'guestbook') {
     if (DOM.guestbookView) DOM.guestbookView.hidden = false;
     loadGuestbook();
+  } else if (view === 'gallery') {
+    if (DOM.galleryView) DOM.galleryView.hidden = false;
+    loadGallery();
   } else {
     DOM.listView.hidden = false;
     loadTestimonials();
@@ -277,6 +295,7 @@ DOM.navNew.addEventListener('click', () => {
 });
 DOM.navList.addEventListener('click', () => navigateTo('list'));
 DOM.navGuestbook.addEventListener('click', () => navigateTo('guestbook'));
+DOM.navGallery.addEventListener('click', () => navigateTo('gallery'));
 DOM.addNewBtn.addEventListener('click', () => {
   resetForm();
   navigateTo('form');
@@ -912,6 +931,332 @@ DOM.guestbookSearchInput.addEventListener('input', () => {
 });
 
 // ═══════════════════════════════════════════════════════════
+// GALLERY MANAGEMENT
+// ═══════════════════════════════════════════════════════════
+let allGalleryItems = [];
+
+async function triggerClearCache() {
+  try {
+    const res = await fetch('clear_cache.php');
+    const data = await res.json();
+    if (data.success) {
+      console.log('Server cache cleared successfully.');
+    } else {
+      console.error('Failed to clear server cache:', data.message);
+    }
+  } catch (err) {
+    console.error('Network error while clearing cache:', err);
+  }
+}
+
+// Bind Cloudinary upload for gallery image
+function bindGalleryImageUpload() {
+  const field = 'gallery-image';
+  const zone = $(`.upload-zone[data-target="${field}"]`);
+  if (!zone) return;
+  const fileInput = $(`#file-${field}`);
+  const placeholder = $(`#placeholder-${field}`);
+  const preview = $(`#preview-${field}`);
+  const progress = $(`#progress-${field}`);
+  const hiddenInput = $(`#${field}`);
+
+  zone.addEventListener('click', (e) => {
+    if (e.target.closest('.remove-upload')) return;
+    fileInput.click();
+  });
+
+  zone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    zone.classList.add('dragging');
+  });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragging'));
+  zone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    zone.classList.remove('dragging');
+    if (e.dataTransfer.files.length) {
+      uploadFile(e.dataTransfer.files[0], field);
+    }
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) {
+      uploadFile(fileInput.files[0], field);
+      fileInput.value = '';
+    }
+  });
+
+  const removeBtn = zone.querySelector('.remove-upload');
+  removeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    hiddenInput.value = '';
+    preview.hidden = true;
+    placeholder.hidden = false;
+  });
+}
+
+// Load gallery items from Supabase
+async function loadGallery() {
+  DOM.galleryLoading.hidden = false;
+  DOM.galleryEmpty.hidden = true;
+  DOM.galleryCardsGrid.innerHTML = '';
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('portfolio_gallery')
+      .select('*')
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    allGalleryItems = data || [];
+    renderGalleryCards(allGalleryItems);
+  } catch (err) {
+    showToast('error', 'Load Failed', err.message);
+  } finally {
+    DOM.galleryLoading.hidden = true;
+  }
+}
+
+// Render gallery cards in the dashboard
+function renderGalleryCards(items) {
+  DOM.galleryCardsGrid.innerHTML = '';
+
+  if (!items.length) {
+    DOM.galleryEmpty.hidden = false;
+    return;
+  }
+
+  DOM.galleryEmpty.hidden = true;
+
+  items.forEach((item) => {
+    const card = document.createElement('div');
+    card.className = `testimonial-card${item.is_visible ? '' : ' hidden-card'}`;
+    card.dataset.id = item.id;
+
+    const hasImg = !!item.image_url;
+
+    card.innerHTML = `
+      <span class="card-visibility-badge ${item.is_visible ? 'visible' : 'hidden-badge'}">
+        <i class="fa-solid ${item.is_visible ? 'fa-eye' : 'fa-eye-slash'}"></i>
+        ${item.is_visible ? 'Visible' : 'Hidden'}
+      </span>
+
+      ${hasImg ? `
+        <div class="card-thumbs">
+          <img src="${item.image_url}" alt="Thumbnail" loading="lazy" onclick="openLightbox('${item.image_url}')">
+        </div>
+      ` : `
+        <div class="card-thumbs-empty">
+          <i class="fa-solid fa-icons"></i>&nbsp; Icon: ${item.icon_type || 'trophy'}
+        </div>
+      `}
+
+      <div class="card-body">
+        <div class="card-top-row">
+          <span class="card-customer">${escapeHtml(item.sub_category)}</span>
+          <div class="gallery-card-meta">
+            <span class="badge category-${item.category}">${escapeHtml(item.category)}</span>
+          </div>
+        </div>
+        <div class="card-project">
+          <i class="fa-solid fa-heading"></i>
+          ${escapeHtml(item.title)}
+        </div>
+        <div class="card-meta">
+          <span class="card-price" style="font-size: 0.8rem; font-family: monospace;">Order: ${item.sort_order}</span>
+        </div>
+      </div>
+
+      <div class="card-actions">
+        <button class="btn-icon toggle-gallery-vis" title="Toggle visibility" data-id="${item.id}" data-visible="${item.is_visible}">
+          <i class="fa-solid ${item.is_visible ? 'fa-eye-slash' : 'fa-eye'}"></i>
+        </button>
+        <button class="btn-icon edit-gallery" title="Edit" data-id="${item.id}">
+          <i class="fa-solid fa-pen-to-square"></i>
+        </button>
+        <button class="btn-icon delete-gallery" title="Delete" data-id="${item.id}">
+          <i class="fa-solid fa-trash-can"></i>
+        </button>
+      </div>
+    `;
+
+    DOM.galleryCardsGrid.appendChild(card);
+  });
+
+  attachGalleryCardListeners();
+}
+
+function attachGalleryCardListeners() {
+  // Toggle visibility
+  DOM.galleryCardsGrid.querySelectorAll('.toggle-gallery-vis').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      const currentlyVisible = btn.dataset.visible === 'true';
+      const newVal = !currentlyVisible;
+
+      const { error } = await supabaseClient
+        .from('portfolio_gallery')
+        .update({ is_visible: newVal })
+        .eq('id', id);
+
+      if (error) {
+        showToast('error', 'Update Failed', error.message);
+        return;
+      }
+
+      showToast('success', newVal ? 'Now Visible' : 'Now Hidden');
+      await triggerClearCache();
+      loadGallery();
+    });
+  });
+
+  // Edit gallery item
+  DOM.galleryCardsGrid.querySelectorAll('.edit-gallery').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const item = allGalleryItems.find(x => String(x.id) === String(id));
+      if (item) {
+        openGalleryModal(item);
+      }
+    });
+  });
+
+  // Delete gallery item
+  DOM.galleryCardsGrid.querySelectorAll('.delete-gallery').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      confirmDeleteGalleryItem(id);
+    });
+  });
+}
+
+function openGalleryModal(item = null) {
+  DOM.galleryForm.reset();
+  
+  // Reset image upload preview
+  $('#gallery-image').value = '';
+  $('#preview-gallery-image').hidden = true;
+  $('#placeholder-gallery-image').hidden = false;
+  $('#progress-gallery-image').hidden = true;
+
+  if (item) {
+    DOM.galleryModalTitle.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Edit Gallery Item';
+    DOM.galleryEditId.value = item.id;
+    $('#gallery-category').value = item.category;
+    $('#gallery-subcategory').value = item.sub_category;
+    $('#gallery-title').value = item.title;
+    $('#gallery-description').value = item.description;
+    
+    if (item.image_url) {
+      $('#gallery-image').value = item.image_url;
+      $('#preview-img-gallery').src = item.image_url;
+      $('#preview-gallery-image').hidden = false;
+      $('#placeholder-gallery-image').hidden = true;
+    }
+    
+    $('#gallery-github').value = item.github_url || '';
+    $('#gallery-live').value = item.live_url || '';
+    $('#gallery-detail').value = item.detail_url || '';
+    $('#gallery-icon').value = item.icon_type || 'trophy';
+    $('#gallery-order').value = item.sort_order;
+    $('#gallery-visible').checked = item.is_visible;
+  } else {
+    DOM.galleryModalTitle.innerHTML = '<i class="fa-solid fa-plus-circle"></i> Add Gallery Item';
+    DOM.galleryEditId.value = '';
+    $('#gallery-order').value = '0';
+    $('#gallery-visible').checked = true;
+  }
+
+  DOM.galleryModal.hidden = false;
+}
+
+function closeGalleryModal() {
+  DOM.galleryModal.hidden = true;
+  DOM.galleryForm.reset();
+}
+
+async function confirmDeleteGalleryItem(id) {
+  const confirmed = await showConfirm(
+    'Delete Gallery Item?',
+    'Are you sure you want to permanently delete this gallery item from your portfolio?',
+    'Delete'
+  );
+  if (confirmed) {
+    try {
+      const { error } = await supabaseClient
+        .from('portfolio_gallery')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      showToast('success', 'Deleted Successfully', 'Gallery item removed.');
+      await triggerClearCache();
+      loadGallery();
+    } catch (err) {
+      showToast('error', 'Delete Failed', err.message);
+    }
+  }
+}
+
+// Bind Gallery Form Submit
+DOM.galleryForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const id = DOM.galleryEditId.value;
+  const isEdit = !!id;
+
+  const payload = {
+    category:      $('#gallery-category').value,
+    sub_category:  $('#gallery-subcategory').value.trim(),
+    title:         $('#gallery-title').value.trim(),
+    description:   $('#gallery-description').value.trim(),
+    image_url:     $('#gallery-image').value || null,
+    github_url:    $('#gallery-github').value.trim() || null,
+    live_url:      $('#gallery-live').value.trim() || null,
+    detail_url:    $('#gallery-detail').value.trim() || null,
+    icon_type:     $('#gallery-icon').value,
+    sort_order:    parseInt($('#gallery-order').value) || 0,
+    is_visible:    $('#gallery-visible').checked
+  };
+
+  const btn = $('#gallery-submit-btn');
+  setLoading(btn, true);
+
+  try {
+    let error;
+
+    if (isEdit) {
+      ({ error } = await supabaseClient
+        .from('portfolio_gallery')
+        .update(payload)
+        .eq('id', id));
+    } else {
+      ({ error } = await supabaseClient
+        .from('portfolio_gallery')
+        .insert([payload]));
+    }
+
+    if (error) throw error;
+
+    showToast('success', isEdit ? 'Item Updated' : 'Item Added', payload.title);
+    closeGalleryModal();
+    await triggerClearCache();
+    loadGallery();
+  } catch (err) {
+    showToast('error', 'Save Failed', err.message);
+  } finally {
+    setLoading(btn, false);
+  }
+});
+
+DOM.galleryAddBtn.addEventListener('click', () => openGalleryModal());
+DOM.galleryModalClose.addEventListener('click', closeGalleryModal);
+DOM.galleryModalCancel.addEventListener('click', closeGalleryModal);
+
+// ═══════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════
+bindGalleryImageUpload();
 checkSession();

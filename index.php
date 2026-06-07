@@ -1,3 +1,86 @@
+<?php
+require_once 'config.php';
+
+$gallery = [];
+$cache_valid = false;
+
+if (file_exists(CACHE_FILE)) {
+    $cache_data = file_get_contents(CACHE_FILE);
+    if ($cache_data) {
+        $gallery = json_decode($cache_data, true);
+        if (is_array($gallery)) {
+            $cache_valid = true;
+        }
+    }
+}
+
+if (!$cache_valid) {
+    $url = SUPABASE_URL . '/rest/v1/portfolio_gallery?select=*&order=sort_order.asc,created_at.desc';
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'apikey: ' . SUPABASE_KEY,
+        'Authorization: Bearer ' . SUPABASE_KEY,
+        'Content-Type: application/json'
+    ]);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+    
+    $response = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    if ($http_code === 200 && $response) {
+        $gallery = json_decode($response, true);
+        if (is_array($gallery)) {
+            file_put_contents(CACHE_FILE, json_encode($gallery, JSON_PRETTY_PRINT));
+        } else {
+            $gallery = [];
+        }
+    } else {
+        $gallery = [];
+    }
+}
+
+$projects = [];
+$awards = [];
+$certificates = [];
+
+foreach ($gallery as $item) {
+    if (!$item['is_visible']) {
+        continue;
+    }
+    if ($item['category'] === 'projects') {
+        $projects[] = $item;
+    } elseif ($item['category'] === 'awards') {
+        $awards[] = $item;
+    } elseif ($item['category'] === 'certificates') {
+        $certificates[] = $item;
+    }
+}
+
+$person_awards = [];
+foreach ($awards as $item) {
+    $person_awards[] = $item['title'];
+}
+if (empty($person_awards)) {
+    $person_awards = ["National and International Achievements in Technology"];
+}
+
+function getPlaceholderColor($icon_type) {
+    switch ($icon_type) {
+        case 'trophy':
+            return ['color' => 'var(--secondary)', 'glow' => 'rgba(188, 19, 254, 0.5)', 'bg' => 'rgba(188, 19, 254, 0.1)', 'icon' => 'fas fa-trophy'];
+        case 'award':
+            return ['color' => 'var(--primary)', 'glow' => 'rgba(0, 243, 255, 0.5)', 'bg' => 'rgba(0, 243, 255, 0.1)', 'icon' => 'fas fa-award'];
+        case 'medal':
+            return ['color' => 'var(--tertiary)', 'glow' => 'rgba(0, 255, 157, 0.5)', 'bg' => 'rgba(0, 255, 157, 0.1)', 'icon' => 'fas fa-medal'];
+        case 'certificate':
+        default:
+            return ['color' => 'var(--primary)', 'glow' => 'rgba(0, 243, 255, 0.5)', 'bg' => 'rgba(0, 243, 255, 0.1)', 'icon' => 'fas fa-certificate'];
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="id">
 
@@ -39,266 +122,180 @@
   
   <!-- SEO DB -->
   <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@graph": [
-      {
-        "@type": "Person",
-        "@id": "https://relv.biz.id/#person",
-        "name": "Farel Putra Firmansyah",
-        "url": "https://relv.biz.id",
-        "image": "https://data-id-card.vercel.app/image/Farel.jpg",
-        "description": "Student developer, tech enthusiast, and competitive programmer with experience in web development, IoT systems, data science, and visual design.",
-        "knowsAbout": [
-          "Web Development",
-          "JavaScript",
-          "Next.js",
-          "Python",
-          "C++",
-          "SQL",
-          "Firebase",
-          "Supabase",
-          "Internet of Things",
-          "Machine Learning",
-          "Data Science",
-          "Competitive Programming",
-          "Cybersecurity",
-          "Visual Design",
-          "Video Editing"
-        ],
-        "sameAs": [
-          "https://github.com/RelV-Dev",
-          "https://instagram.com/zx_frl"
-        ],
-        "affiliation": {
-          "@type": "EducationalOrganization",
-          "name": "SMA Negeri 3 Pati"
-        },
-        "award": [
-          "Juara 1 Lomba Karya Tulis Ilmiah (KTI) Tingkat Nasional IEEE Competition 2025 Universitas Brawijaya",
-          "Juara 1 Desain Poster Digital FLS3N Tingkat Kabupaten Pati 2025 (Puspresnas)",
-          "Juara 2 IoT & Networking Competition Tingkat Nasional 2025 (PENS)",
-          "Juara 3 Lomba Karya Tulis Ilmiah (KTI) UAD Fair 2025 tingkat DIY-Jawa Tengah bidang Fisika Terapan dan Rekayasa (UAD)",
-          "Juara Harapan 2 Karya Tulis Ilmiah KRENOVA Tingkat Kabupaten Pati bidang Rekayasa Energi Manufaktur (Bappeda)",
-          "Finalis KRENOVA Tingkat Provinsi Jawa Tengah mewakili Kabupaten Pati (Brida Provinsi Jawa Tengah)",
-          "Gold Medal Indonesian Advance Science Competition (IASC) bidang Informatika (Fosnas)"
-        ],
-        "memberOf": [
-          {
-            "@type": "Organization",
-            "name": "SMAGA English Association (SEA)",
-            "description": "Ketua (Periode 2024/2025)"
-          },
-          {
-            "@type": "Organization",
-            "name": "Ekstrakurikuler Karya Ilmiah Remaja (KIR) SMA Negeri 3 Pati",
-            "description": "Ketua (Periode 2025/2026)"
-          },
-          {
-            "@type": "Organization",
-            "name": "OSIS SMA Negeri 3 Pati",
-            "description": "Koordinator Seksi Bidang Ilmu Teknologi Informasi, Komunikasi, serta Publikasi dan Dokumentasi (PDD) (Periode 2024/2025)"
-          },
-          {
-            "@type": "Organization",
-            "name": "Program DISAWIDHA ADIWIYATA SMA Negeri 3 Pati",
-            "description": "Koordinator Divisi IT dan Publikasi (Tahun 2025)"
-          },
-          {
-            "@type": "Organization",
-            "name": "Ekstrakurikuler Jurnalistik SMA Negeri 3 Pati",
-            "description": "Anggota (Periode 2023/2024)"
-          },
-          {
-            "@type": "Organization",
-            "name": "Ekstrakurikuler Majalah Dinding (Mading) SMA Negeri 3 Pati",
-            "description": "Anggota (Periode 2025/2026)"
-          },
-          {
-            "@type": "Organization",
-            "name": "SMAGADAY 2024",
-            "description": "Ketua Divisi IT"
-          }
-        ]
-      },
-      {
-        "@type": "WebSite",
-        "@id": "https://relv.biz.id/#website",
-        "url": "https://relv.biz.id",
-        "name": "Farel Putra Firmansyah – Portfolio",
-        "description": "Personal portfolio website showcasing projects, awards, certificates, and interactive technical visualizations.",
-        "publisher": {
-          "@id": "https://relv.biz.id/#person"
-        },
-        "inLanguage": ["id-ID", "en-US"]
-      },
-      {
-        "@type": "WebPage",
-        "@id": "https://relv.biz.id/#webpage",
-        "url": "https://relv.biz.id",
-        "name": "Farel Putra Firmansyah Portfolio",
-        "isPartOf": {
-          "@id": "https://relv.biz.id/#website"
-        },
-        "about": {
-          "@id": "https://relv.biz.id/#person"
-        },
-        "primaryImageOfPage": {
-          "@type": "ImageObject",
-          "url": "https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841885/x3esj1090dipra4braiq.png"
-        }
-      },
-      {
-        "@type": "ItemList",
-        "@id": "https://relv.biz.id/#projects",
-        "name": "Projects Portfolio",
-        "itemListElement": [
-        {
-          "@type": "CreativeWork",
-          "name": "OSIS Recruitment Selection Results System",
-          "description": "Web-based recruitment result system inspired by the SNBP university admission portal, built with Next.js and Firebase.",
-          "creator": {
-            "@id": "https://relv.biz.id/#person"
-          }
-        },
-        {
-          "@type": "CreativeWork",
-          "name": "Living Heritage: Digital Educational Platform of Pati Residency",
-          "description": "Educational web platform presenting historical and cultural heritage with responsive design and visual storytelling.",
-          "creator": {
-            "@id": "https://relv.biz.id/#person"
-          }
-        },
-        {
-          "@type": "CreativeWork",
-          "name": "IoT-Based Solar Energy Monitoring and Power Management System",
-          "description": "IoT system using ESP32 for real-time solar energy monitoring with API-driven dashboard.",
-          "creator": {
-            "@id": "https://relv.biz.id/#person"
-          }
-        }]
-      },
-      {
-        "@type": "ItemList",
-        "@id": "https://relv.biz.id/#awards",
-        "name": "Awards and Achievements",
-        "itemListElement": [
-        {
-          "@type": "Award",
-          "name": "Juara 1 Lomba Karya Tulis Ilmiah (KTI) Tingkat Nasional IEEE Competition 2025",
-          "awardedBy": {
-            "@type": "Organization",
-            "name": "IEEE Student Branch Universitas Brawijaya"
-          }
-        },
-        {
-          "@type": "Award",
-          "name": "Juara 1 Desain Poster Digital FLS3N Tingkat Kabupaten Pati 2025",
-          "awardedBy": {
-            "@type": "Organization",
-            "name": "Puspresnas"
-          }
-        },
-        {
-          "@type": "Award",
-          "name": "Juara 2 IoT & Networking Competition Tingkat Nasional 2025",
-          "awardedBy": {
-            "@type": "Organization",
-            "name": "Politeknik Elektronika Negeri Surabaya (PENS)"
-          }
-        },
-        {
-          "@type": "Award",
-          "name": "Juara 3 Lomba Karya Tulis Ilmiah (KTI) UAD Fair 2025 tingkat DIY-Jawa Tengah bidang Fisika Terapan dan Rekayasa",
-          "awardedBy": {
-            "@type": "Organization",
-            "name": "Universitas Ahmad Dahlan (UAD)"
-          }
-        },
-        {
-          "@type": "Award",
-          "name": "Juara Harapan 2 Karya Tulis Ilmiah KRENOVA Tingkat Kabupaten Pati bidang Rekayasa Energi Manufaktur",
-          "awardedBy": {
-            "@type": "Organization",
-            "name": "Bappeda Kabupaten Pati"
-          }
-        },
-        {
-          "@type": "Award",
-          "name": "Finalis KRENOVA Tingkat Provinsi Jawa Tengah mewakili Kabupaten Pati",
-          "awardedBy": {
-            "@type": "Organization",
-            "name": "Brida Provinsi Jawa Tengah"
-          }
-        },
-        {
-          "@type": "Award",
-          "name": "Gold Medal Indonesian Advance Science Competition (IASC) bidang Informatika",
-          "awardedBy": {
-            "@type": "Organization",
-            "name": "Fosnas"
-          }
-        },
-        {
-          "@type": "Award",
-          "name": "Google Kick Start 2021 – Round C (Global Rank 17)",
-          "awardedBy": {
-            "@type": "Organization",
-            "name": "Google"
-          }
-        }]
-      },
-      {
-        "@type": "ItemList",
-        "@id": "https://relv.biz.id/#certificates",
-        "name": "Professional Certifications",
-        "itemListElement": [
-        {
-          "@type": "EducationalOccupationalCredential",
-          "name": "Data Scientist with Python",
-          "credentialCategory": "Professional Certificate",
-          "recognizedBy": {
-            "@type": "Organization",
-            "name": "DataCamp"
-          }
-        },
-        {
-          "@type": "EducationalOccupationalCredential",
-          "name": "Machine Learning",
-          "recognizedBy": {
-            "@type": "Organization",
-            "name": "Bangkit Academy"
-          }
-        },
-        {
-          "@type": "EducationalOccupationalCredential",
-          "name": "Data Science",
-          "recognizedBy": {
-            "@type": "Organization",
-            "name": "MITx"
-          }
-        },
-        {
-          "@type": "EducationalOccupationalCredential",
-          "name": "SQL",
-          "recognizedBy": {
-            "@type": "Organization",
-            "name": "Stanford University"
-          }
-        }]
-      },
-      {
-        "@type": "Service",
-        "@id": "https://relv.biz.id/#freelance",
-        "name": "Freelance Development Services",
-        "provider": {
-          "@id": "https://relv.biz.id/#person"
-        },
-        "serviceType": ["Web Development", "IoT Development", "UI/UX Design", "Data Science", "Video Editing"],
-        "areaServed": "ID",
-        "description": "Professional freelance services in web development, IoT systems, design, data science, and video editing with proven client testimonials."
-      }]
+    <?php
+    $projectsSchema = [];
+    foreach ($projects as $item) {
+        $projectsSchema[] = [
+            "@type" => "CreativeWork",
+            "name" => $item['title'],
+            "description" => $item['description'],
+            "creator" => [
+                "@id" => "https://relv.biz.id/#person"
+            ]
+        ];
     }
+
+    $awardsSchema = [];
+    foreach ($awards as $item) {
+        $awardedBy = "Various Organizations";
+        if (preg_match('/Dikeluarkan oleh ([^.]+)/u', $item['description'], $matches)) {
+            $awardedBy = trim($matches[1]);
+        } elseif (preg_match('/Diselenggarakan oleh ([^.]+)/u', $item['description'], $matches)) {
+            $awardedBy = trim($matches[1]);
+        }
+        $awardsSchema[] = [
+            "@type" => "Award",
+            "name" => $item['title'],
+            "awardedBy" => [
+                "@type" => "Organization",
+                "name" => $awardedBy
+            ]
+        ];
+    }
+
+    $certificatesSchema = [];
+    foreach ($certificates as $item) {
+        $recognizedBy = "Various Organizations";
+        if (preg_match('/by ([^.]+)/i', $item['description'], $matches)) {
+            $recognizedBy = trim($matches[1]);
+        } elseif (preg_match('/provided by ([^.]+)/i', $item['description'], $matches)) {
+            $recognizedBy = trim($matches[1]);
+        } elseif (preg_match('/oleh ([^.]+)/u', $item['description'], $matches)) {
+            $recognizedBy = trim($matches[1]);
+        }
+        $certificatesSchema[] = [
+            "@type" => "EducationalOccupationalCredential",
+            "name" => $item['title'],
+            "recognizedBy" => [
+                "@type" => "Organization",
+                "name" => $recognizedBy
+            ]
+        ];
+    }
+
+    $schema = [
+      "@context" => "https://schema.org",
+      "@graph" => [
+        [
+          "@type" => "Person",
+          "@id" => "https://relv.biz.id/#person",
+          "name" => "Farel Putra Firmansyah",
+          "url" => "https://relv.biz.id",
+          "image" => "https://data-id-card.vercel.app/image/Farel.jpg",
+          "description" => "Student developer, tech enthusiast, and competitive programmer with experience in web development, IoT systems, data science, and visual design.",
+          "knowsAbout" => [
+            "Web Development", "JavaScript", "Next.js", "Python", "C++", "SQL", "Firebase", "Supabase",
+            "Internet of Things", "Machine Learning", "Data Science", "Competitive Programming", "Cybersecurity",
+            "Visual Design", "Video Editing"
+          ],
+          "sameAs" => [
+            "https://github.com/RelV-Dev",
+            "https://instagram.com/zx_frl"
+          ],
+          "affiliation" => [
+            "@type" => "EducationalOrganization",
+            "name" => "SMA Negeri 3 Pati"
+          ],
+          "award" => $person_awards,
+          "memberOf" => [
+            [
+              "@type" => "Organization",
+              "name" => "SMAGA English Association (SEA)",
+              "description" => "Ketua (Periode 2024/2025)"
+            ],
+            [
+              "@type" => "Organization",
+              "name" => "Ekstrakurikuler Karya Ilmiah Remaja (KIR) SMA Negeri 3 Pati",
+              "description" => "Ketua (Periode 2025/2026)"
+            ],
+            [
+              "@type" => "Organization",
+              "name" => "OSIS SMA Negeri 3 Pati",
+              "description" => "Koordinator Seksi Bidang Ilmu Teknologi Informasi, Komunikasi, serta Publikasi dan Dokumentasi (PDD) (Periode 2024/2025)"
+            ],
+            [
+              "@type" => "Organization",
+              "name" => "Program DISAWIDHA ADIWIYATA SMA Negeri 3 Pati",
+              "description" => "Koordinator Divisi IT dan Publikasi (Tahun 2025)"
+            ],
+            [
+              "@type" => "Organization",
+              "name" => "Ekstrakurikuler Jurnalistik SMA Negeri 3 Pati",
+              "description" => "Anggota (Periode 2023/2024)"
+            ],
+            [
+              "@type" => "Organization",
+              "name" => "Ekstrakurikuler Majalah Dinding (Mading) SMA Negeri 3 Pati",
+              "description" => "Anggota (Periode 2025/2026)"
+            ],
+            [
+              "@type" => "Organization",
+              "name" => "SMAGADAY 2024",
+              "description" => "Ketua Divisi IT"
+            ]
+          ]
+        ],
+        [
+          "@type" => "WebSite",
+          "@id" => "https://relv.biz.id/#website",
+          "url" => "https://relv.biz.id",
+          "name" => "Farel Putra Firmansyah – Portfolio",
+          "description" => "Personal portfolio website showcasing projects, awards, certificates, and interactive technical visualizations.",
+          "publisher" => [
+            "@id" => "https://relv.biz.id/#person"
+          ],
+          "inLanguage" => ["id-ID", "en-US"]
+        ],
+        [
+          "@type" => "WebPage",
+          "@id" => "https://relv.biz.id/#webpage",
+          "url" => "https://relv.biz.id",
+          "name" => "Farel Putra Firmansyah Portfolio",
+          "isPartOf" => [
+            "@id" => "https://relv.biz.id/#website"
+          ],
+          "about" => [
+            "@id" => "https://relv.biz.id/#person"
+          ],
+          "primaryImageOfPage" => [
+            "@type" => "ImageObject",
+            "url" => "https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841885/x3esj1090dipra4braiq.png"
+          ]
+        ],
+        [
+          "@type" => "ItemList",
+          "@id" => "https://relv.biz.id/#projects",
+          "name" => "Projects Portfolio",
+          "itemListElement" => $projectsSchema
+        ],
+        [
+          "@type" => "ItemList",
+          "@id" => "https://relv.biz.id/#awards",
+          "name" => "Awards and Achievements",
+          "itemListElement" => $awardsSchema
+        ],
+        [
+          "@type" => "ItemList",
+          "@id" => "https://relv.biz.id/#certificates",
+          "name" => "Professional Certifications",
+          "itemListElement" => $certificatesSchema
+        ],
+        [
+          "@type" => "Service",
+          "@id" => "https://relv.biz.id/#freelance",
+          "name" => "Freelance Development Services",
+          "provider" => [
+            "@id" => "https://relv.biz.id/#person"
+          ],
+          "serviceType" => ["Web Development", "IoT Development", "UI/UX Design", "Data Science", "Video Editing"],
+          "areaServed" => "ID",
+          "description" => "Professional freelance services in web development, IoT systems, design, data science, and video editing with proven client testimonials."
+        ]
+      ]
+    ];
+
+    echo json_encode($schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    ?>
   </script>
   
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -3993,377 +3990,65 @@
     </div>
     
     <div class="gallery-grid">
-      <div class="gallery-card" data-category="projects">
-        <div class="card-img">
-          <img loading="lazy" src="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841887/oa9tgxawjzxkszaqjmaa.webp" alt="SELECTION SYSTEM OF OSIS">
-          <div class="card-overlay">
-            <a href="https://github.com/RelV-Dev" class="overlay-btn" target="_blank" title="Code"><i class="fab fa-github"></i></a>
-            <a href="https://osissmaga.my.id/oprec/2025" class="overlay-btn" target="_blank" title="Live Demo"><i class="fas fa-link"></i></a>
+      <?php foreach ($gallery as $item): ?>
+        <?php if (!$item['is_visible']) continue; ?>
+        <div class="gallery-card" data-category="<?= htmlspecialchars($item['category']) ?>">
+          <div class="card-img">
+            <?php if (!empty($item['image_url'])): ?>
+              <img loading="lazy" src="<?= htmlspecialchars($item['image_url']) ?>" alt="<?= htmlspecialchars($item['title']) ?>">
+              <?php if (!empty($item['github_url']) || !empty($item['live_url']) || !empty($item['detail_url'])): ?>
+              <div class="card-overlay">
+                <?php if (!empty($item['github_url'])): ?>
+                  <a href="<?= htmlspecialchars($item['github_url']) ?>" class="overlay-btn" target="_blank" title="Code"><i class="fab fa-github"></i></a>
+                <?php endif; ?>
+                <?php if (!empty($item['live_url'])): ?>
+                  <a href="<?= htmlspecialchars($item['live_url']) ?>" class="overlay-btn" target="_blank" title="Live Demo"><i class="fas fa-link"></i></a>
+                <?php endif; ?>
+                <?php if (!empty($item['detail_url'])): ?>
+                  <?php
+                    $overlay_icon = 'fas fa-link';
+                    if ($item['category'] === 'awards') { $overlay_icon = 'fas fa-trophy'; }
+                    elseif ($item['category'] === 'certificates') { $overlay_icon = 'fas fa-certificate'; }
+                  ?>
+                  <a href="<?= htmlspecialchars($item['detail_url']) ?>" class="overlay-btn" target="_blank" title="View"><i class="<?= $overlay_icon ?>"></i></a>
+                <?php endif; ?>
+              </div>
+              <?php endif; ?>
+            <?php else: ?>
+              <?php 
+                $p = getPlaceholderColor($item['icon_type']);
+              ?>
+              <div class="card-img-placeholder" style="height: 220px; background: linear-gradient(135deg, rgba(5, 5, 5, 0.9), <?= $p['bg'] ?>); display: flex; align-items: center; justify-content: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); position: relative;">
+                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, <?= $p['bg'] ?> 0%, transparent 70%); pointer-events: none;"></div>
+                <i class="<?= $p['icon'] ?>" style="font-size: 3.5rem; color: <?= $p['color'] ?>; filter: drop-shadow(0 0 15px <?= $p['glow'] ?>);"></i>
+                <?php if (!empty($item['github_url']) || !empty($item['live_url']) || !empty($item['detail_url'])): ?>
+                <div class="card-overlay">
+                  <?php if (!empty($item['github_url'])): ?>
+                    <a href="<?= htmlspecialchars($item['github_url']) ?>" class="overlay-btn" target="_blank" title="Code"><i class="fab fa-github"></i></a>
+                  <?php endif; ?>
+                  <?php if (!empty($item['live_url'])): ?>
+                    <a href="<?= htmlspecialchars($item['live_url']) ?>" class="overlay-btn" target="_blank" title="Live Demo"><i class="fas fa-link"></i></a>
+                  <?php endif; ?>
+                  <?php if (!empty($item['detail_url'])): ?>
+                    <?php
+                      $overlay_icon = 'fas fa-link';
+                      if ($item['category'] === 'awards') { $overlay_icon = 'fas fa-trophy'; }
+                      elseif ($item['category'] === 'certificates') { $overlay_icon = 'fas fa-certificate'; }
+                    ?>
+                    <a href="<?= htmlspecialchars($item['detail_url']) ?>" class="overlay-btn" target="_blank" title="View"><i class="<?= $overlay_icon ?>"></i></a>
+                  <?php endif; ?>
+                </div>
+                <?php endif; ?>
+              </div>
+            <?php endif; ?>
+          </div>
+          <div class="card-content">
+            <span class="card-category"><?= htmlspecialchars($item['sub_category']) ?></span>
+            <h3><?= htmlspecialchars($item['title']) ?></h3>
+            <p class="text-reveal-anim"><?= htmlspecialchars($item['description']) ?></p>
           </div>
         </div>
-        <div class="card-content">
-          <span class="card-category">Web Dev</span>
-          <h3>OSIS Recruitment Selection Results System Using NextJS</h3>
-          <p class="text-reveal-anim">Frontend using Next.js 14, React, Tailwind CSS and Database using Firebase.
-            i built a web-based system inspired by the SNBP university selection portal, allowing candidates to securely check their results by entering their Registration ID and birth date. Successful candidates immediately receive their acceptance details along with a WhatsApp QR code to join the OSIS.
-          </p>
-        </div>
-      </div>
-      
-      <div class="gallery-card" data-category="projects">
-        <div class="card-img">
-          <img loading="lazy" src="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841888/yh1vbcskffzakgup9z5p.webp" alt="EDUKASI SEJARAH DIGITAL">
-          <a href="https://smanegeri3pati.site" class="overlay-btn" target="_blank" title="Live Demo"><i class="fas fa-link"></i></a>
-        </div>
-        <div class="card-content">
-          <span class="card-category">Web Dev</span>
-          <h3>Living Heritage: Digital Educational Platform of Pati Residency and Tjondronegoro Tomb</h3>
-          <p class="text-reveal-anim">An educational web application that presents the historical and cultural heritage of the former Pati Residency, with a special focus on Makam Tjondronegoro as a central narrative
-            Built using HTML, CSS, and JavaScript with a fully responsive design, the website delivers structured historical content, visual storytelling, and intuitive navigation.</p>
-        </div>
-      </div>
-      
-      <div class="gallery-card" data-category="projects">
-        <div class="card-img">
-          <img loading="lazy" src="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841889/outixtgzrumkdif8plch.webp" alt="IOT SYSTEM">
-          <a href="https://smanegeri3pati.site" class="overlay-btn" target="_blank" title="Live Demo"><i class="fas fa-link"></i></a>
-        </div>
-        <div class="card-content">
-          <span class="card-category">HARDWARE</span>
-          <h3>IoT-Based Solar Energy Monitoring and Power Management System with API-Driven Dashboard Using Next.js</h3>
-          <p class="text-reveal-anim">An IoT-based mobile solar energy system that monitors temperature, voltage, and current in real time using ESP32 and cloud integration,
-            enabling efficient power management and data visualization through a web dashboard.</p>
-        </div>
-      </div>
-      
-      <div class="gallery-card" data-category="awards">
-        <div class="card-img">
-          <img loading="lazy" src="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841890/vr8n9ecgmxknyt3ugv9q.webp" alt="IEEE FEST SB UB">
-          <div class="card-overlay">
-            <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_JUARA%201%20KTI%20TINGKAT%20NASIONAL%20IEEE%20FEST%20UNIVERSITAS%20BRAWIJAYA.webp" class="overlay-btn"><i class="fas fa-trophy"></i></a>
-          </div>
-        </div>
-        <div class="card-content">
-          <span class="card-category">Award - 2025</span>
-          <h3>1st Place - National Scientific Paper Competition (LKTI) IEEE SB UB Fest 2025</h3>
-          <p class="text-reveal-anim">Dikeluarkan oleh IEEE Student Branch, Universitas Brawijaya. Awarded 1st Place at the National Level in the IEEE SB UB Fest 2025 organized by the IEEE Student Branch of Universitas Brawijaya, a chapter of the Institute of Electrical and Electronics Engineers (IEEE) - the world's largest professional organization dedicated to advancing technology for humanity.</p>
-        </div>
-      </div>
-      
-      <div class="gallery-card" data-category="awards">
-        <div class="card-img">
-          <img loading="lazy" src="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841891/b0gjexr0kwsjdvopbyfg.webp" alt="JUARA 1 FLS3N KAB. PATI">
-          <div class="card-overlay">
-            <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_PIAGAM%20FLS3N%20SMA%20KAB%20PATI%202025.webp" class="overlay-btn"><i class="fas fa-trophy"></i></a>
-          </div>
-        </div>
-        <div class="card-content">
-          <span class="card-category">Award - 2025</span>
-          <h3>1st Place Winner - Poster Design FLS3N</h3>
-          <p class="text-reveal-anim">Dikeluarkan oleh Kementerian Pendidikan, Kebudayaan, Riset, dan Teknologi (Kemendikbudristek). Created a visually impactful poster design that stood out among district-level participants in the FLS3N competition organized by the Indonesian Ministry of Education and Culture.</p>
-        </div>
-      </div>
-      
-      <div class="gallery-card" data-category="awards">
-        <div class="card-img">
-          <img src="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841892/ncd0az7irx4qecposbgq.webp" alt="IONIC">
-          <div class="card-overlay">
-            <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_JUARA%202%20IOT%20IONIC%202025.webp" class="overlay-btn"><i class="fas fa-trophy"></i></a>
-          </div>
-        </div>
-        <div class="card-content">
-          <span class="card-category">Award - 2025</span>
-          <h3>2nd Place - National IoT Competition (IONIC 2025)</h3>
-          <p class="text-reveal-anim">Dikeluarkan oleh Politeknik Elektronika Negeri Surabaya (PENS). Represented SMA Negeri 3 Pati and was awarded 2nd Place in the Internet of Things (IoT) category at IONIC 2025, a national-level competition organized by PENS. PENS is ranked as the number one polytechnic in Southeast Asia and among the top 10 polytechnics in Asia.
-          </p>
-        </div>
-      </div>
-      
-      <div class="gallery-card" data-category="awards">
-        <div class="card-img">
-          <img loading="lazy" src="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841893/tasbvk8xwlygb71niqsz.webp" alt="TechnoFair National App Development">
-          <div class="card-overlay">
-            <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_JUARA%202%20TECHNOFAIR%20TINGKAT%20NASIONAL.webp" class="overlay-btn" title="View Certificate">
-              <i class="fas fa-trophy"></i>
-            </a>
-          </div>
-        </div>
-        <div class="card-content">
-          <span class="card-category">Award - 2025</span>
-          <h3>2nd Place – National App Development Competition (TechnoFair 2025)</h3>
-          <p class="text-reveal-anim">
-            Dikeluarkan oleh panitia TechnoFair 2025. Awarded 2nd Place at the National Level in the App Development Competition at TechnoFair 2025, recognizing innovation, technical implementation, and problem-solving capabilities in mobile and application-based software development.
-          </p>
-        </div>
-      </div>
-      
-      <div class="gallery-card" data-category="awards">
-        <div class="card-img">
-          <img loading="lazy" src="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841894/e0wjlmiyh2lrhkzwrup5.webp" alt="LKTI UAD FEST 2025">
-          <div class="card-overlay">
-            <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_JUARA%203%20KTI%20Tk.%20DIY-JATENG%20UNIVERSITAS%20AHMAD%20DAHLAN.webp" class="overlay-btn"><i class="fas fa-trophy"></i></a>
-          </div>
-        </div>
-        <div class="card-content">
-          <span class="card-category">Award - 2025</span>
-          <h3>3rd Place - Scientific Paper Competition (Physics & Applied Sciences)</h3>
-          <p class="text-reveal-anim">Dikeluarkan oleh Universitas Ahmad Dahlan (UAD) -Yogyakarta. Achieved 3rd place in the Provincial Level Scientific Paper Competition focusing on Physics and Applied Sciences.</p>
-        </div>
-      </div>
-      
-      <div class="gallery-card" data-category="awards">
-        <div class="card-img">
-          <img loading="lazy" src="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841895/eofr2wy2ezeoagjcqyku.webp" alt="Google Kick Start 2021">
-          <div class="card-overlay">
-            <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_Google%20Kickstart%202021.webp" class="overlay-btn" target="_blank" title="View Certificate">
-              <i class="fas fa-trophy"></i>
-            </a>
-          </div>
-        </div>
-        <div class="card-content">
-          <span class="card-category">Award – 2021</span>
-          <h3>Google Kick Start 2021 – Round C (Global Rank 17)</h3>
-          <p class="text-reveal-anim">
-            International competitive programming contest by Google, focused on advanced algorithms and problem-solving skills.
-          </p>
-        </div>
-      </div>
-      
-      <div class="gallery-card" data-category="awards">
-        <div class="card-img">
-          <div class="card-img-placeholder" style="height: 220px; background: linear-gradient(135deg, rgba(5, 5, 5, 0.9), rgba(188, 19, 254, 0.05)); display: flex; align-items: center; justify-content: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); position: relative;">
-            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, rgba(188, 19, 254, 0.1) 0%, transparent 70%); pointer-events: none;"></div>
-            <i class="fas fa-trophy" style="font-size: 3.5rem; color: var(--secondary); filter: drop-shadow(0 0 15px rgba(188, 19, 254, 0.5));"></i>
-          </div>
-        </div>
-        <div class="card-content">
-          <span class="card-category">Award – 2025</span>
-          <h3>Juara Harapan 2 Karya Tulis Ilmiah (KRENOVA) Kabupaten Pati</h3>
-          <p class="text-reveal-anim">
-            Diselenggarakan oleh Bappeda Kabupaten Pati. Juara Harapan 2 dalam Lomba Karya Tulis Ilmiah Kreativitas dan Inovasi Masyarakat (KRENOVA) Tingkat Kabupaten Pati bidang Rekayasa Energi Manufaktur.
-          </p>
-        </div>
-      </div>
-
-      <div class="gallery-card" data-category="awards">
-        <div class="card-img">
-          <div class="card-img-placeholder" style="height: 220px; background: linear-gradient(135deg, rgba(5, 5, 5, 0.9), rgba(0, 243, 255, 0.05)); display: flex; align-items: center; justify-content: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); position: relative;">
-            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, rgba(0, 243, 255, 0.1) 0%, transparent 70%); pointer-events: none;"></div>
-            <i class="fas fa-award" style="font-size: 3.5rem; color: var(--primary); filter: drop-shadow(0 0 15px rgba(0, 243, 255, 0.5));"></i>
-          </div>
-        </div>
-        <div class="card-content">
-          <span class="card-category">Award – 2025</span>
-          <h3>Finalis KRENOVA Tingkat Provinsi Jawa Tengah</h3>
-          <p class="text-reveal-anim">
-            Diselenggarakan oleh Brida Provinsi Jawa Tengah. Terpilih sebagai Finalis KRENOVA Tingkat Provinsi Jawa Tengah mewakili Kabupaten Pati.
-          </p>
-        </div>
-      </div>
-
-      <div class="gallery-card" data-category="awards">
-        <div class="card-img">
-          <div class="card-img-placeholder" style="height: 220px; background: linear-gradient(135deg, rgba(5, 5, 5, 0.9), rgba(0, 255, 157, 0.05)); display: flex; align-items: center; justify-content: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); position: relative;">
-            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, rgba(0, 255, 157, 0.1) 0%, transparent 70%); pointer-events: none;"></div>
-            <i class="fas fa-medal" style="font-size: 3.5rem; color: var(--tertiary); filter: drop-shadow(0 0 15px rgba(0, 255, 157, 0.5));"></i>
-          </div>
-        </div>
-        <div class="card-content">
-          <span class="card-category">Award – 2025</span>
-          <h3>Gold Medal Indonesian Advance Science Competition (IASC)</h3>
-          <p class="text-reveal-anim">
-            Diselenggarakan oleh Fosnas. Meraih Medali Emas (Gold Medal) tingkat nasional dalam Indonesian Advance Science Competition (IASC) di bidang Informatika.
-          </p>
-        </div>
-      </div>
-
-      <div class="gallery-card" data-category="certificates">
-        <div class="card-img">
-          <img loading="lazy" src="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841896/rnbkrgr2xn6mtapdcrxd.webp" alt="MITx edX Data Science Certificate">
-          <div class="card-overlay">
-            <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_EDX%20MIT%20DATA%20SCIENCE.webp" class="overlay-btn" target="_blank" title="View Certificate">
-              <i class="fas fa-certificate"></i>
-            </a>
-          </div>
-        </div>
-        <div class="card-content">
-          <span class="card-category">Certification</span>
-          <h3>Data Science</h3>
-          <p class="text-reveal-anim">
-            Professional data science certification by MITx delivered through the edX platform.
-          </p>
-        </div>
-      </div>
-      
-      <div class="gallery-card" data-category="certificates">
-        <div class="card-img">
-          <img loading="lazy" src="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841897/ztibnx6pxrgei5bwalee.webp" alt="HarvardX edX Data Science and Machine Learning">
-          <div class="card-overlay">
-            <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_EDX_HARVARD_1027168179162.webp" class="overlay-btn" target="_blank" title="View Certificate">
-              <i class="fas fa-certificate"></i>
-            </a>
-          </div>
-        </div>
-        <div class="card-content">
-          <span class="card-category">Certification</span>
-          <h3>Data Science & Machine Learning</h3>
-          <p class="text-reveal-anim">
-            Professional certification in data analysis and machine learning by HarvardX via edX.
-          </p>
-        </div>
-      </div>
-      
-      <div class="gallery-card" data-category="certificates">
-        <div class="card-img">
-          <img loading="lazy" src="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841898/zvtmyommhql72wewcwze.webp" alt="Kominfo Python Programming Online Academy">
-          <div class="card-overlay">
-            <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_KOMINFO_Python%20Program%20Online%20Academy.webp" class="overlay-btn" target="_blank" title="View Certificate">
-              <i class="fas fa-certificate"></i>
-            </a>
-          </div>
-        </div>
-        <div class="card-content">
-          <span class="card-category">Certification</span>
-          <h3>Python Programming</h3>
-          <p class="text-reveal-anim">
-            Python programming training provided by the Ministry of Communication and Informatics of Indonesia.
-          </p>
-        </div>
-      </div>
-      
-      <div class="gallery-card" data-category="certificates">
-        <div class="card-img">
-          <img loading="lazy" src="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841898/uhcdv1fjmassewmhciwt.webp" alt="Kominfo Digital Skills Online Academy">
-          <div class="card-overlay">
-            <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_KOMINFO_DIGITAL%20SKILLS%20ONLINE%20ACADEMY.webp" class="overlay-btn" target="_blank" title="View Certificate">
-              <i class="fas fa-certificate"></i>
-            </a>
-          </div>
-        </div>
-        <div class="card-content">
-          <span class="card-category">Certification</span>
-          <h3>Digital Skills</h3>
-          <p class="text-reveal-anim">
-            National digital competency training covering modern technology and productivity tools.
-          </p>
-        </div>
-      </div>
-      
-      <div class="gallery-card" data-category="certificates">
-        <div class="card-img">
-          <img loading="lazy" src="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841899/dcww6ydu5xaiykgednyk.webp" alt="DataCamp Data Scientist with Python">
-          <div class="card-overlay">
-            <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_DataCamp-Data%20Scientist%20with%20Python%20Track.webp" class="overlay-btn" target="_blank" title="View Certificate">
-              <i class="fas fa-certificate"></i>
-            </a>
-          </div>
-        </div>
-        <div class="card-content">
-          <span class="card-category">Certification</span>
-          <h3>Data Scientist with Python</h3>
-          <p class="text-reveal-anim">
-            Comprehensive data science track focusing on Python, analytics, and machine learning.
-          </p>
-        </div>
-      </div>
-      
-      <div class="gallery-card" data-category="certificates">
-        <div class="card-img">
-          <img loading="lazy" src="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841900/pn9jrrpjegq7wypf0kc2.webp" alt="Bangkit Academy Machine Learning Certificate">
-          <div class="card-overlay">
-            <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_BANGKIT%20ACADEMY%20-%20MACHINE%20LEARNING.webp" class="overlay-btn" target="_blank" title="View Certificate">
-              <i class="fas fa-certificate"></i>
-            </a>
-          </div>
-        </div>
-        <div class="card-content">
-          <span class="card-category">Certification</span>
-          <h3>Machine Learning</h3>
-          <p class="text-reveal-anim">
-            Industry-aligned machine learning program by Bangkit Academy, supported by Google, GoTo, and Traveloka.
-          </p>
-        </div>
-      </div>
-      
-      <div class="gallery-card" data-category="certificates">
-        <div class="card-img">
-          <img loading="lazy" src="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841901/ormle3mh92vdilsjr1iw.webp" alt="Stanford University SQL">
-          <div class="card-overlay">
-            <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_Stanford%20University%20-%20SQL.webp" class="overlay-btn" target="_blank">
-              <i class="fas fa-certificate"></i>
-            </a>
-          </div>
-        </div>
-        <div class="card-content">
-          <span class="card-category">Certification</span>
-          <h3>SQL</h3>
-          <p class="text-reveal-anim">Database querying and relational data management by Stanford University.</p>
-        </div>
-      </div>
-      
-      <div class="gallery-card" data-category="certificates">
-        <div class="card-img">
-          <img loading="lazy" src="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841902/oifod5tmtupnjpavzsug.webp" alt="Stanford University Relational Design Theory">
-          <div class="card-overlay">
-            <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_Stanford%20University%20-%20Relational%20Design%20Thery.webp" class="overlay-btn" target="_blank">
-              <i class="fas fa-certificate"></i>
-            </a>
-          </div>
-        </div>
-        <div class="card-content">
-          <span class="card-category">Certification</span>
-          <h3>Relational Design Theory</h3>
-          <p class="text-reveal-anim">Fundamentals of relational database schema design.</p>
-        </div>
-      </div>
-      
-      <div class="gallery-card" data-category="certificates">
-        <div class="card-img">
-          <img loading="lazy" src="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841903/lw6v5dpv0iooamyfwlhx.webp" alt="Stanford University OLAP">
-          <div class="card-overlay">
-            <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_Stanford%20University%20-%20On-Line%20Analytical%20Processing.webp" class="overlay-btn" target="_blank">
-              <i class="fas fa-certificate"></i>
-            </a>
-          </div>
-        </div>
-        <div class="card-content">
-          <span class="card-category">Certification</span>
-          <h3>On-Line Analytical Processing</h3>
-          <p class="text-reveal-anim">Analytical data processing and multidimensional analysis.</p>
-        </div>
-      </div>
-      
-      <div class="gallery-card" data-category="certificates">
-        <div class="card-img">
-          <img loading="lazy" src="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841904/pqahptwoc4laazpnref7.webp" alt="Stanford University Views and Authorization">
-          <div class="card-overlay">
-            <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_Stanford%20University%20-%20Views%20and%20Authorization.webp" class="overlay-btn" target="_blank">
-              <i class="fas fa-certificate"></i>
-            </a>
-          </div>
-        </div>
-        <div class="card-content">
-          <span class="card-category">Certification</span>
-          <h3>Views and Authorization</h3>
-          <p class="text-reveal-anim">Database views, access control, and authorization mechanisms.</p>
-        </div>
-      </div>
-      
-      <div class="gallery-card" data-category="certificates">
-        <div class="card-img">
-          <img loading="lazy" src="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841904/c5y0ai1tgk3htd80ja8w.webp" alt="Stanford University XSLT">
-          <div class="card-overlay">
-            <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_Stanford%20University%20-%20XSLT.webp" class="overlay-btn" target="_blank">
-              <i class="fas fa-certificate"></i>
-            </a>
-          </div>
-        </div>
-        <div class="card-content">
-          <span class="card-category">Certification</span>
-          <h3>XSLT</h3>
-          <p class="text-reveal-anim">XML transformation and structured data processing.</p>
-        </div>
-      </div>
+      <?php endforeach; ?>
     </div>
 
     <div class="pagination-controls" id="galleryPagination">
@@ -5893,7 +5578,7 @@
       loadTestimonials();
       loadGuestbook();
     } else {
-      console.warn('Supabase credentials not configured. Replace YOUR_SUPABASE_URL and YOUR_SUPABASE_ANON_KEY in index.html');
+      console.warn('Supabase credentials not configured. Replace YOUR_SUPABASE_URL and YOUR_SUPABASE_ANON_KEY in index.php');
       const emptyState = document.getElementById('testimonialEmpty');
       const gridContainer = document.querySelector('.testimonials-grid-container');
       if (emptyState) emptyState.style.display = 'block';

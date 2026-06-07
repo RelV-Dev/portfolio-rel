@@ -94,6 +94,10 @@
           <i class="fa-solid fa-comments"></i>
           <span>Guestbook</span>
         </button>
+        <button class="nav-item" data-view="gallery" id="nav-gallery">
+          <i class="fa-solid fa-images"></i>
+          <span>Manage Gallery</span>
+        </button>
       </nav>
 
       <div class="sidebar-footer">
@@ -371,8 +375,139 @@
         </div>
       </div>
 
+      <!-- ═══════ GALLERY VIEW ═══════ -->
+      <div id="gallery-view" class="content-panel" hidden>
+        <div class="panel-header">
+          <h2><i class="fa-solid fa-images"></i> Portfolio Gallery</h2>
+          <div class="panel-actions">
+            <button class="btn btn-primary" id="gallery-add-btn">
+              <i class="fa-solid fa-plus"></i> Add Gallery Item
+            </button>
+          </div>
+        </div>
+
+        <div class="testimonials-list" id="gallery-list-container">
+          <!-- Loading -->
+          <div class="loading-state" id="gallery-loading">
+            <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+            <p>Loading gallery items…</p>
+          </div>
+          <!-- Empty State -->
+          <div class="empty-state" id="gallery-empty" hidden>
+            <i class="fa-solid fa-images fa-3x"></i>
+            <h3>No gallery items yet</h3>
+            <p>Add projects, certificates, or awards to showcase on your portfolio.</p>
+          </div>
+          <!-- Grid Container -->
+          <div class="cards-grid" id="gallery-cards-grid"></div>
+        </div>
+      </div>
+
     </main>
   </section>
+
+  <!-- ═══════ GALLERY ITEM MODAL ═══════ -->
+  <div class="modal-overlay" id="gallery-modal" hidden>
+    <div class="modal-card gallery-modal-card">
+      <div class="modal-header">
+        <h3 id="gallery-modal-title">Add Gallery Item</h3>
+        <button class="btn-close" id="gallery-modal-close" type="button"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="gallery-form">
+        <input type="hidden" id="gallery-edit-id" name="id">
+        
+        <div class="form-row">
+          <div class="form-group" style="flex: 1;">
+            <label for="gallery-category"><i class="fa-solid fa-tags"></i> Category</label>
+            <select id="gallery-category" name="category" required>
+              <option value="projects">Projects</option>
+              <option value="certificates">Certificates</option>
+              <option value="awards">Awards</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label for="gallery-subcategory"><i class="fa-solid fa-folder"></i> Sub Category</label>
+            <input type="text" id="gallery-subcategory" name="sub_category" placeholder="e.g. Web Dev, Certification, Award - 2025" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="gallery-title"><i class="fa-solid fa-heading"></i> Title</label>
+          <input type="text" id="gallery-title" name="title" placeholder="Project or Award Title" required>
+        </div>
+
+        <div class="form-group">
+          <label for="gallery-description"><i class="fa-solid fa-align-left"></i> Description</label>
+          <textarea id="gallery-description" name="description" rows="3" placeholder="Enter details..." required></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group" style="flex: 1;">
+            <label><i class="fa-solid fa-image"></i> Image (Cloudinary)</label>
+            <div class="upload-zone" data-target="gallery-image">
+              <input type="file" id="file-gallery-image" accept="image/*" hidden>
+              <div class="upload-placeholder" id="placeholder-gallery-image">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <span>Click to upload image</span>
+              </div>
+              <div class="upload-preview" id="preview-gallery-image" hidden>
+                <img src="" alt="Gallery image preview" id="preview-img-gallery" style="max-height: 100px; width: auto; object-fit: contain; margin: 10px auto; display: block;">
+                <button type="button" class="remove-upload" data-field="gallery-image" id="remove-img-gallery"><i class="fa-solid fa-trash-can"></i></button>
+              </div>
+              <div class="upload-progress" id="progress-gallery-image" hidden>
+                <div class="progress-bar"><div class="progress-fill"></div></div>
+                <span class="progress-text">0%</span>
+              </div>
+            </div>
+            <input type="hidden" id="gallery-image" name="image_url" value="">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group" style="flex: 1;">
+            <label for="gallery-github"><i class="fa-brands fa-github"></i> GitHub URL (Optional)</label>
+            <input type="url" id="gallery-github" name="github_url" placeholder="https://github.com/...">
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label for="gallery-live"><i class="fa-solid fa-link"></i> Live URL (Optional)</label>
+            <input type="url" id="gallery-live" name="live_url" placeholder="https://...">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group" style="flex: 1;">
+            <label for="gallery-detail"><i class="fa-solid fa-award"></i> Certificate/Detail URL (Optional)</label>
+            <input type="url" id="gallery-detail" name="detail_url" placeholder="https://github.com/.../Certificate.webp">
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label for="gallery-icon"><i class="fa-solid fa-icons"></i> Placeholder Icon (If no image)</label>
+            <select id="gallery-icon" name="icon_type">
+              <option value="trophy">Trophy</option>
+              <option value="medal">Medal</option>
+              <option value="award">Award</option>
+              <option value="certificate">Certificate</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group" style="flex: 1;">
+            <label for="gallery-order"><i class="fa-solid fa-sort"></i> Sort Order</label>
+            <input type="number" id="gallery-order" name="sort_order" value="0" min="0" required>
+          </div>
+          <div class="form-group" style="flex: 1; flex-direction: row; align-items: center; gap: 10px; margin-top: 25px;">
+            <input type="checkbox" id="gallery-visible" name="is_visible" checked style="width: auto; margin: 0;">
+            <label for="gallery-visible" style="margin: 0; cursor: pointer;">Visible on Portfolio</label>
+          </div>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 15px;">
+          <button type="button" class="btn btn-ghost" id="gallery-modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="gallery-submit-btn">Save Item</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- ═══════════════════ CONFIRM MODAL ═══════════════════ -->
   <div class="modal-overlay" id="confirm-modal" hidden>
