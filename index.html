@@ -743,10 +743,7 @@
     }
 
     .typing-text {
-      background: linear-gradient(135deg, var(--primary), #bc13fe);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      display: inline;
     }
 
     .typing-char {
@@ -754,6 +751,10 @@
       opacity: 0;
       transform: translateY(8px) scale(0.8);
       animation: charReveal 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      background: linear-gradient(135deg, var(--primary), #bc13fe);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
     .typing-char.deleting {
