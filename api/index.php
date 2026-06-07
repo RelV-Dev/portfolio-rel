@@ -26,7 +26,6 @@ if (isset($_SERVER['VERCEL'])) {
     
     $response = curl_exec($ch);
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
     
     if ($http_code === 200 && $response) {
         $gallery = json_decode($response, true);
@@ -62,7 +61,6 @@ if (isset($_SERVER['VERCEL'])) {
         
         $response = curl_exec($ch);
         $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
         
         if ($http_code === 200 && $response) {
             $gallery = json_decode($response, true);
