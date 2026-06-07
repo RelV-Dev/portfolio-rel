@@ -1,0 +1,51 @@
+{
+  "functions": {
+    "index.php": {
+      "runtime": "vercel-php@0.9.0"
+    },
+    "clear_cache.php": {
+      "runtime": "vercel-php@0.9.0"
+    },
+    "info.php": {
+      "runtime": "vercel-php@0.9.0"
+    }
+  },
+  "routes": [
+    {
+      "src": "/clear_cache.php",
+      "dest": "/clear_cache.php"
+    },
+    {
+      "src": "/info.php",
+      "dest": "/info.php"
+    },
+    {
+      "src": "/dashboard",
+      "dest": "/dashboard.html"
+    },
+    {
+      "src": "/dashboard.html",
+      "dest": "/dashboard.html"
+    },
+    {
+      "src": "/dashboard.css",
+      "dest": "/dashboard.css"
+    },
+    {
+      "src": "/dashboard.js",
+      "dest": "/dashboard.js"
+    },
+    {
+      "src": "/robots.txt",
+      "dest": "/robots.txt"
+    },
+    {
+      "src": "/sitemap.xml",
+      "dest": "/sitemap.xml"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.php"
+    }
+  ]
+}

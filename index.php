@@ -3,18 +3,16 @@ require_once 'config.php';
 
 $gallery = [];
 $cache_valid = false;
+$bypass_cache = isset($_GET['bypass_cache']) || isset($_GET['clear_cache']);
 
-if (file_exists(CACHE_FILE)) {
-    $cache_data = file_get_contents(CACHE_FILE);
-    if ($cache_data) {
-        $gallery = json_decode($cache_data, true);
-        if (is_array($gallery)) {
-            $cache_valid = true;
-        }
+if (isset($_SERVER['VERCEL'])) {
+    // Vercel Serverless environment (uses Vercel Global Edge CDN Caching instead of file-based cache)
+    if ($bypass_cache) {
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+    } else {
+        header('Cache-Control: public, max-age=0, s-maxage=1800, stale-while-revalidate=300');
     }
-}
 
-if (!$cache_valid) {
     $url = SUPABASE_URL . '/rest/v1/portfolio_gallery?select=*&order=sort_order.asc,created_at.desc';
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -32,13 +30,50 @@ if (!$cache_valid) {
     
     if ($http_code === 200 && $response) {
         $gallery = json_decode($response, true);
-        if (is_array($gallery)) {
-            file_put_contents(CACHE_FILE, json_encode($gallery, JSON_PRETTY_PRINT));
-        } else {
+        if (!is_array($gallery)) {
             $gallery = [];
         }
     } else {
         $gallery = [];
+    }
+} else {
+    // Local environment (use file-based caching)
+    if (!$bypass_cache && file_exists(CACHE_FILE)) {
+        $cache_data = @file_get_contents(CACHE_FILE);
+        if ($cache_data) {
+            $gallery = json_decode($cache_data, true);
+            if (is_array($gallery)) {
+                $cache_valid = true;
+            }
+        }
+    }
+    
+    if (!$cache_valid) {
+        $url = SUPABASE_URL . '/rest/v1/portfolio_gallery?select=*&order=sort_order.asc,created_at.desc';
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'apikey: ' . SUPABASE_KEY,
+            'Authorization: Bearer ' . SUPABASE_KEY,
+            'Content-Type: application/json'
+        ]);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+        
+        $response = curl_exec($ch);
+        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($http_code === 200 && $response) {
+            $gallery = json_decode($response, true);
+            if (is_array($gallery)) {
+                @file_put_contents(CACHE_FILE, json_encode($gallery, JSON_PRETTY_PRINT));
+            } else {
+                $gallery = [];
+            }
+        } else {
+            $gallery = [];
+        }
     }
 }
 

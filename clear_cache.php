@@ -10,6 +10,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once 'config.php';
 
+if (isset($_SERVER['VERCEL'])) {
+    echo json_encode(['success' => true, 'message' => 'Vercel cache bypassed/cleared (using Edge Caching).']);
+    exit;
+}
+
 if (file_exists(CACHE_FILE)) {
     if (unlink(CACHE_FILE)) {
         echo json_encode(['success' => true, 'message' => 'Cache cleared successfully.']);
