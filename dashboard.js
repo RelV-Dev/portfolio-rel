@@ -11,7 +11,7 @@ const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/imag
 const TABLE = 'testimonials';
 
 // ───── Supabase Client ─────
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ───── DOM Cache ─────
 const $ = (sel) => document.querySelector(sel);
@@ -170,7 +170,7 @@ function formatDate(dateStr) {
 // AUTH
 // ═══════════════════════════════════════════════════════════
 async function checkSession() {
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await supabaseClient.auth.getSession();
   if (session) {
     showDashboard(session.user);
   } else {
@@ -186,7 +186,7 @@ DOM.loginForm.addEventListener('submit', async (e) => {
 
   setLoading(DOM.loginBtn, true);
 
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
   setLoading(DOM.loginBtn, false);
 
@@ -200,7 +200,7 @@ DOM.loginForm.addEventListener('submit', async (e) => {
 });
 
 DOM.logoutBtn.addEventListener('click', async () => {
-  await supabase.auth.signOut();
+  await supabaseClient.auth.signOut();
   DOM.loginView.hidden = false;
   DOM.dashView.hidden = true;
   DOM.loginForm.reset();
@@ -439,12 +439,12 @@ DOM.form.addEventListener('submit', async (e) => {
     let error;
 
     if (isEdit) {
-      ({ error } = await supabase
+      ({ error } = await supabaseClient
         .from(TABLE)
         .update(payload)
         .eq('id', DOM.editId.value));
     } else {
-      ({ error } = await supabase
+      ({ error } = await supabaseClient
         .from(TABLE)
         .insert([payload]));
     }
@@ -499,7 +499,7 @@ async function loadTestimonials() {
   DOM.cardsGrid.innerHTML = '';
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from(TABLE)
       .select('*')
       .order('created_at', { ascending: false });
@@ -609,7 +609,7 @@ function attachCardListeners() {
       const currentlyVisible = btn.dataset.visible === 'true';
       const newVal = !currentlyVisible;
 
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from(TABLE)
         .update({ is_visible: newVal })
         .eq('id', id);
@@ -647,7 +647,7 @@ function attachCardListeners() {
 
       if (!ok) return;
 
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from(TABLE)
         .delete()
         .eq('id', id);

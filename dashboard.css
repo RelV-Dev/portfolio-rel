@@ -25,6 +25,11 @@
   --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* --- Helper Utility to Enforce HTML hidden Attribute --- */
+[hidden] {
+  display: none !important;
+}
+
 /* ───── Reset ───── */
 *, *::before, *::after {
   margin: 0;
