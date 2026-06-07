@@ -4876,6 +4876,83 @@
       const galaxy = createGalaxy();
       scene.add(galaxy);
       
+      // --- NEW: Procedural Space Planets ---
+      const planetsGroup = new THREE.Group();
+      
+      // A. Planet 1: Purple Gas Giant + Rings
+      const p1Group = new THREE.Group();
+      const p1Geo = new THREE.SphereGeometry(1.8, 32, 32);
+      const p1Mat = new THREE.MeshStandardMaterial({
+        color: 0xbc13fe,
+        emissive: 0xbc13fe,
+        emissiveIntensity: 0.6,
+        metalness: 0.8,
+        roughness: 0.2
+      });
+      const p1Sphere = new THREE.Mesh(p1Geo, p1Mat);
+      p1Group.add(p1Sphere);
+      
+      const ringGeo = new THREE.RingGeometry(2.4, 4.0, 64);
+      ringGeo.rotateX(Math.PI / 2);
+      const ringMat = new THREE.MeshStandardMaterial({
+        color: 0xbc13fe,
+        emissive: 0xbc13fe,
+        emissiveIntensity: 0.3,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.8
+      });
+      const p1Rings = new THREE.Mesh(ringGeo, ringMat);
+      p1Group.add(p1Rings);
+      planetsGroup.add(p1Group);
+      
+      // B. Planet 2: Cyan Cyber Ocean + Outer Hologram Grid
+      const p2Group = new THREE.Group();
+      const p2Geo = new THREE.SphereGeometry(1.2, 32, 32);
+      const p2Mat = new THREE.MeshStandardMaterial({
+        color: 0x00f3ff,
+        emissive: 0x00f3ff,
+        emissiveIntensity: 0.8,
+        metalness: 0.9,
+        roughness: 0.1
+      });
+      const p2Sphere = new THREE.Mesh(p2Geo, p2Mat);
+      p2Group.add(p2Sphere);
+      
+      const p2WireGeo = new THREE.SphereGeometry(1.35, 16, 16);
+      const p2WireMat = new THREE.MeshBasicMaterial({
+        color: 0x00f3ff,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.25
+      });
+      const p2Wireframe = new THREE.Mesh(p2WireGeo, p2WireMat);
+      p2Group.add(p2Wireframe);
+      planetsGroup.add(p2Group);
+      
+      // C. Planet 3: Lava Core Moon (Gold/Yellow)
+      const p3Group = new THREE.Group();
+      const p3Geo = new THREE.SphereGeometry(0.7, 32, 32);
+      const p3Mat = new THREE.MeshStandardMaterial({
+        color: 0xffaa00,
+        emissive: 0xffaa00,
+        emissiveIntensity: 1.2,
+        metalness: 0.5,
+        roughness: 0.4
+      });
+      const p3Sphere = new THREE.Mesh(p3Geo, p3Mat);
+      p3Group.add(p3Sphere);
+      planetsGroup.add(p3Group);
+      
+      scene.add(planetsGroup);
+      
+      // Define orbiting array for animation loop update
+      const orbitingPlanets = [
+        { group: p1Group, radius: 32, speed: 0.15, rotY: 0.01 },
+        { group: p2Group, radius: 22, speed: 0.28, rotY: -0.02 },
+        { group: p3Group, radius: 14, speed: 0.45, rotY: 0.04 }
+      ];
+
       // 6. Main Groups
       const chartGroup = new THREE.Group();
       const interactiveGroup = new THREE.Group();
@@ -5049,7 +5126,8 @@
       chartGroup.scale.set(scaleFactor, scaleFactor, scaleFactor);
       chartGroup.position.y = -0.5;
       
-      camera.position.set(0, 14, 24);
+      const isMobile = window.innerWidth < 768;
+      camera.position.set(0, isMobile ? 18 : 14, isMobile ? 36 : 24);
       camera.lookAt(0, -2, 0);
       
       // --- TOOLTIP ---
@@ -5250,6 +5328,13 @@
         controls.update();
         starField.rotation.y += 0.0002;
         galaxy.rotation.y -= 0.0005;
+        
+        // Update Space Planets Orbit & Rotation
+        orbitingPlanets.forEach(p => {
+          p.group.position.x = Math.cos(time * p.speed) * p.radius;
+          p.group.position.z = Math.sin(time * p.speed) * p.radius;
+          p.group.rotation.y += p.rotY;
+        });
         
         // Language Floating (Hanya sumbu Y karena Z dikunci user)
         interactiveGroup.children.forEach(child => {
