@@ -884,7 +884,7 @@
     
     .journey-line {
       position: absolute;
-      top: 70px;
+      top: 30px;
       left: 0;
       width: 100%;
       height: 2px;
@@ -895,7 +895,7 @@
     
     .journey-line-progress {
       position: absolute;
-      top: 70px;
+      top: 30px;
       left: 0;
       width: 0%;
       height: 3px;
@@ -2244,9 +2244,9 @@
       .journey-line {
         width: 2px;
         height: 100%;
-        left: 50%;
+        left: 30px;
         top: 0;
-        transform: translateX(-50%);
+        transform: none;
         background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.2) 50%, transparent 50%);
         background-size: 100% 20px;
       }
@@ -2254,9 +2254,9 @@
       .journey-line-progress {
         width: 3px;
         height: 0%;
-        left: 50%;
+        left: 30px;
         top: 0;
-        transform: translateX(-50%);
+        transform: none;
       }
       
       .journey-firefly-container {
@@ -2285,13 +2285,21 @@
       }
       
       .journey-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+        display: block;
+        position: relative;
+        text-align: left;
+        padding-left: 75px;
         opacity: 1;
         /* Pastikan terlihat */
         transform: none;
         filter: none;
+      }
+      
+      .journey-icon {
+        position: absolute;
+        left: 0;
+        top: 0;
+        margin: 0;
       }
     }
     
@@ -4059,6 +4067,7 @@
     // Variabel untuk Linear Interpolation (Lerp)
     let targetProgress = 0;
     let currentProgress = 0;
+    let currentProgressPx = 0;
     let isScrolling = false;
     
     // Fungsi Lerp sederhana
@@ -4068,29 +4077,62 @@
     
     // Loop animasi RequestAnimationFrame agar gerakan firefly halus (tidak patah-patah)
     function animateScroll() {
-      // Factor 0.05 membuat gerakan "terlambat" sedikit sehingga terlihat sangat halus/mengalir
-      // Semakin kecil angkanya, semakin pelan responsnya.
-      currentProgress = lerp(currentProgress, targetProgress, 0.05);
-      
-      // Render ke CSS
       const isMobile = window.innerWidth <= 992;
+      const eduContainer = document.getElementById('eduContainer');
       
-      // Format persentase untuk CSS
-      const pctString = (currentProgress * 100).toFixed(2) + '%';
+      let activeIndex = -1;
+      if (isMobile) {
+        // Mobile: snap to icon based on viewport position
+        const triggerPoint = window.innerHeight * 0.6;
+        journeyItems.forEach((item, index) => {
+          const rect = item.getBoundingClientRect();
+          if (rect.top <= triggerPoint) {
+            activeIndex = index;
+          }
+        });
+      } else {
+        // Desktop: map scroll percentage (targetProgress) to active index
+        const totalItems = journeyItems.length;
+        journeyItems.forEach((item, index) => {
+          const threshold = (index / (totalItems - 1 || 1)) * 0.9;
+          if (targetProgress >= threshold) {
+            activeIndex = index;
+          }
+        });
+      }
+      
+      // Calculate target pixels
+      let targetProgressPx = 0;
+      if (activeIndex >= 0 && activeIndex < journeyItems.length) {
+        const activeItem = journeyItems[activeIndex];
+        const activeIcon = activeItem.querySelector('.journey-icon');
+        if (activeIcon && eduContainer) {
+          const containerRect = eduContainer.getBoundingClientRect();
+          const iconRect = activeIcon.getBoundingClientRect();
+          if (isMobile) {
+            const iconCenterY = (iconRect.top + iconRect.height / 2) - containerRect.top;
+            targetProgressPx = Math.max(0, iconCenterY);
+          } else {
+            const iconCenterX = (iconRect.left + iconRect.width / 2) - containerRect.left;
+            targetProgressPx = iconCenterX;
+          }
+        }
+      }
+      
+      // Smooth interpolation using lerp
+      currentProgressPx = lerp(currentProgressPx, targetProgressPx, 0.08);
       
       if (isMobile) {
         journeyProgress.style.width = '3px';
-        journeyProgress.style.height = pctString;
+        journeyProgress.style.height = currentProgressPx.toFixed(2) + 'px';
       } else {
         journeyProgress.style.height = '3px';
-        journeyProgress.style.width = pctString;
+        journeyProgress.style.width = currentProgressPx.toFixed(2) + 'px';
       }
       
-      // Trigger animasi Item Cards berdasarkan currentProgress (smooth)
+      // Update active state and visibility of items
       journeyItems.forEach((item, index) => {
-        const threshold = (index + 0.1) / journeyItems.length;
-        
-        if (currentProgress > threshold) {
+        if (index <= activeIndex) {
           item.classList.add('active');
           item.classList.add('visible');
         } else {
