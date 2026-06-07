@@ -2502,7 +2502,7 @@
     .testimonials-grid-container {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 20px 0 40px;
+      padding: 20px 0 10px;
     }
 
     .testimonials-grid {
@@ -3013,7 +3013,7 @@
 
     /* --- GUESTBOOK SECTION --- */
     .guestbook-section {
-      padding: 40px 0 80px;
+      padding: 10px 0 40px;
       position: relative;
     }
     
@@ -3021,6 +3021,7 @@
       max-width: 1200px;
       margin: 0 auto;
       padding: 0 20px;
+      overflow: hidden;
     }
     
     .guestbook-header-row {
@@ -3077,21 +3078,11 @@
     }
     
     .guestbook-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      display: flex;
+      flex-wrap: nowrap;
       gap: 20px;
-    }
-    
-    @media (max-width: 992px) {
-      .guestbook-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-    
-    @media (max-width: 600px) {
-      .guestbook-grid {
-        grid-template-columns: 1fr;
-      }
+      width: max-content;
+      will-change: transform;
     }
     
     .guestbook-card {
@@ -3105,16 +3096,8 @@
       flex-direction: column;
       gap: 12px;
       transition: all 0.3s ease;
-      opacity: 0;
-      transform: translateY(20px);
-      animation: guestbookFadeIn 0.5s ease forwards;
-    }
-    
-    @keyframes guestbookFadeIn {
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      width: 320px;
+      flex-shrink: 0;
     }
     
     .guestbook-card:hover {
@@ -3126,9 +3109,15 @@
     .guestbook-card-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       border-bottom: 1px solid rgba(255, 255, 255, 0.03);
       padding-bottom: 8px;
+    }
+    
+    .guestbook-card-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
     
     .guestbook-card-name {
@@ -3137,10 +3126,20 @@
       color: #fff;
     }
     
+    .guestbook-card-stars {
+      display: flex;
+      gap: 3px;
+      color: #ffaa00;
+      font-size: 0.82rem;
+      margin-top: 2px;
+      text-shadow: 0 0 6px rgba(255, 170, 0, 0.3);
+    }
+    
     .guestbook-card-date {
       font-size: 0.75rem;
       color: var(--text-muted);
       font-family: var(--font-mono);
+      margin-top: 2px;
     }
     
     .guestbook-card-msg {
@@ -3158,6 +3157,7 @@
       border: 1px dashed rgba(255, 255, 255, 0.05);
       border-radius: 16px;
       background: rgba(20, 20, 25, 0.2);
+      width: 100%;
     }
     
     /* --- GUESTBOOK MODAL OVERLAY --- */
@@ -3267,6 +3267,25 @@
     .guestbook-form-group textarea {
       resize: none;
       height: 110px;
+    }
+    
+    .star-rating-wrapper {
+      display: flex;
+      gap: 8px;
+      font-size: 1.6rem;
+      color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .star-btn {
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .star-btn.hovered,
+    .star-btn.active {
+      color: #ffaa00;
+      text-shadow: 0 0 10px rgba(255, 170, 0, 0.4);
+      transform: scale(1.15);
     }
     
     .guestbook-submit-btn {
@@ -3607,6 +3626,17 @@
         <div class="guestbook-form-group">
           <label for="guestbookName">Nama Anda</label>
           <input type="text" id="guestbookName" maxlength="30" required placeholder="Tulis nama Anda...">
+        </div>
+        <div class="guestbook-form-group">
+          <label>Rating Anda</label>
+          <div class="star-rating-wrapper" id="starRatingWrapper">
+            <i class="far fa-star star-btn" data-value="1"></i>
+            <i class="far fa-star star-btn" data-value="2"></i>
+            <i class="far fa-star star-btn" data-value="3"></i>
+            <i class="far fa-star star-btn" data-value="4"></i>
+            <i class="far fa-star star-btn" data-value="5"></i>
+          </div>
+          <input type="hidden" id="guestbookRating" value="5">
         </div>
         <div class="guestbook-form-group">
           <label for="guestbookMessage">Pesan</label>
@@ -4965,6 +4995,57 @@
       }, 4000);
     }
 
+    // Star Rating interactions in Modal Form
+    const starBtns = document.querySelectorAll('#starRatingWrapper .star-btn');
+    const guestbookRatingInput = document.getElementById('guestbookRating');
+    
+    starBtns.forEach(btn => {
+      btn.addEventListener('mouseover', () => {
+        const hoverVal = parseInt(btn.getAttribute('data-value'), 10);
+        highlightStars(hoverVal);
+      });
+      
+      btn.addEventListener('mouseout', () => {
+        const selectedVal = parseInt(guestbookRatingInput.value, 10);
+        highlightStars(selectedVal);
+      });
+      
+      btn.addEventListener('click', () => {
+        const clickVal = parseInt(btn.getAttribute('data-value'), 10);
+        guestbookRatingInput.value = clickVal;
+        highlightStars(clickVal);
+      });
+    });
+    
+    function highlightStars(count) {
+      starBtns.forEach(btn => {
+        const val = parseInt(btn.getAttribute('data-value'), 10);
+        if (val <= count) {
+          btn.classList.add('active');
+          btn.classList.remove('far');
+          btn.classList.add('fas');
+        } else {
+          btn.classList.remove('active');
+          btn.classList.remove('fas');
+          btn.classList.add('far');
+        }
+      });
+    }
+    
+    // Set default stars on load
+    highlightStars(5);
+
+    let marqueeAnimationId = null;
+    let marqueePosX = 0;
+    let marqueeHalfWidth = 0;
+    let isMarqueeHovered = false;
+
+    function renderStars(rating) {
+      const fullStars = '<i class="fas fa-star"></i>'.repeat(rating);
+      const emptyStars = '<i class="far fa-star"></i>'.repeat(5 - rating);
+      return `<div class="guestbook-card-stars">${fullStars}${emptyStars}</div>`;
+    }
+
     async function loadGuestbook() {
       try {
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -4982,6 +5063,12 @@
 
         if (!grid) return;
 
+        // Stop any running marquee animation
+        if (marqueeAnimationId) {
+          cancelAnimationFrame(marqueeAnimationId);
+          marqueeAnimationId = null;
+        }
+
         grid.innerHTML = '';
         if (allGuestbookMessages.length === 0) {
           if (emptyState) emptyState.style.display = 'block';
@@ -4990,10 +5077,9 @@
 
         if (emptyState) emptyState.style.display = 'none';
 
-        allGuestbookMessages.forEach((msg, index) => {
+        allGuestbookMessages.forEach((msg) => {
           const card = document.createElement('div');
           card.className = 'guestbook-card';
-          card.style.animationDelay = `${index * 0.05}s`;
           
           const dateStr = new Date(msg.created_at).toLocaleDateString('id-ID', {
             day: 'numeric',
@@ -5003,7 +5089,10 @@
 
           card.innerHTML = `
             <div class="guestbook-card-header">
-              <span class="guestbook-card-name">${escapeHtml(msg.name)}</span>
+              <div class="guestbook-card-info">
+                <span class="guestbook-card-name">${escapeHtml(msg.name)}</span>
+                ${renderStars(msg.rating || 5)}
+              </div>
               <span class="guestbook-card-date">${dateStr}</span>
             </div>
             <p class="guestbook-card-msg">${escapeHtml(msg.message)}</p>
@@ -5011,11 +5100,60 @@
           grid.appendChild(card);
         });
 
+        // Initialize Marquee if there are elements to scroll
+        if (allGuestbookMessages.length > 0) {
+          // Clone all elements once to make loop seamless
+          const originalCards = Array.from(grid.children);
+          originalCards.forEach(card => {
+            const clone = card.cloneNode(true);
+            grid.appendChild(clone);
+          });
+
+          // Calculate half width of track
+          setTimeout(() => {
+            marqueeHalfWidth = grid.scrollWidth / 2;
+            marqueePosX = 0;
+            startMarqueeLoop();
+          }, 100);
+        }
+
       } catch (err) {
         console.warn('Guestbook load failed:', err.message);
         const emptyState = document.getElementById('guestbookEmpty');
         if (emptyState) emptyState.style.display = 'block';
       }
+    }
+
+    function startMarqueeLoop() {
+      const grid = document.getElementById('guestbookGrid');
+      if (!grid || marqueeHalfWidth === 0) return;
+
+      const loop = () => {
+        if (!isMarqueeHovered) {
+          marqueePosX -= 0.8; // Speed in pixels per frame
+          if (Math.abs(marqueePosX) >= marqueeHalfWidth) {
+            marqueePosX = 0;
+          }
+          grid.style.transform = `translate3d(${marqueePosX}px, 0, 0)`;
+        }
+        marqueeAnimationId = requestAnimationFrame(loop);
+      };
+      
+      marqueeAnimationId = requestAnimationFrame(loop);
+      
+      // Attach hover hooks
+      grid.removeEventListener('mouseenter', onMarqueeEnter);
+      grid.removeEventListener('mouseleave', onMarqueeLeave);
+      grid.addEventListener('mouseenter', onMarqueeEnter);
+      grid.addEventListener('mouseleave', onMarqueeLeave);
+    }
+
+    function onMarqueeEnter() {
+      isMarqueeHovered = true;
+    }
+    
+    function onMarqueeLeave() {
+      isMarqueeHovered = false;
     }
 
     // Modal Control
@@ -5114,7 +5252,7 @@
           const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
           const { error } = await supabase
             .from('guestbook')
-            .insert([{ name, message, is_approved: false }]);
+            .insert([{ name, message, rating: parseInt(guestbookRatingInput.value, 10), is_approved: false }]);
 
           if (error) throw error;
 
@@ -5125,6 +5263,8 @@
           
           // Reset form
           guestbookForm.reset();
+          highlightStars(5);
+          guestbookRatingInput.value = "5";
           closeGuestbookModal();
 
         } catch (err) {

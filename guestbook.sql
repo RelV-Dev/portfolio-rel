@@ -3,8 +3,10 @@ CREATE TABLE IF NOT EXISTS guestbook (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     name VARCHAR(30) NOT NULL,
     message VARCHAR(200) NOT NULL,
+    rating INT DEFAULT 5 NOT NULL,
     is_approved BOOLEAN DEFAULT false NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    CONSTRAINT check_rating_range CHECK (rating >= 1 AND rating <= 5)
 );
 
 -- Enable Row Level Security (RLS)

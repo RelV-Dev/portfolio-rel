@@ -811,10 +811,12 @@ function renderGuestbookCards(messages) {
       minute: '2-digit'
     });
 
+    const starsHtml = '<span style="color: #ffaa00; font-size: 0.9rem; margin-top: 2px;">' + '★'.repeat(msg.rating || 5) + '☆'.repeat(5 - (msg.rating || 5)) + '</span>';
+
     card.innerHTML = `
       <div class="guestbook-card-header">
         <div class="guestbook-card-info">
-          <span class="guestbook-card-author">${escapeHtml(msg.name)}</span>
+          <span class="guestbook-card-author" style="display: inline-flex; align-items: center; gap: 8px;">${escapeHtml(msg.name)} ${starsHtml}</span>
           <span class="guestbook-card-timestamp">${dateStr}</span>
         </div>
         <span class="guestbook-card-status ${msg.is_approved ? 'approved' : 'pending'}">
