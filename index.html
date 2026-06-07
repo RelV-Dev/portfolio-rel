@@ -5152,15 +5152,16 @@
           isTeleporting: false,
           teleportProgress: 0,
           speed: 0.25, // orbital speed
-          orbitRadiusX: 28,
-          orbitRadiusZ: 14,
-          targetY: 4
+          orbitRadiusX: 18,
+          orbitRadiusZ: 10,
+          targetY: 6.5
         };
         
-        // Set children userData to tag them as parts of the astronaut
-        const parts = [body, helmet, visor, panel, pack, leftBoot, rightBoot];
-        parts.forEach(p => {
-          p.userData = { isAstronaut: true, parentGroup: astronaut };
+        // Set children userData recursively to tag all parts of the astronaut
+        astronaut.traverse(child => {
+          if (child.isMesh) {
+            child.userData = { isAstronaut: true, parentGroup: astronaut };
+          }
         });
         
         return astronaut;
@@ -5646,41 +5647,102 @@
       tooltipSprite.scale.set(4.5, 2.25, 1);
       tooltipSprite.visible = false;
       scene.add(tooltipSprite);
-      
       const raycaster = new THREE.Raycaster();
       const mouse = new THREE.Vector2(-100, -100);
       let intersectedObject = null;
+      
+      let isDraggingAstro = false;
+      let hasDraggedAstro = false;
+      let dragStartMouse = new THREE.Vector2();
+      let dragStartTime = 0;
+      const dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -6.5);
+      const dragIntersection = new THREE.Vector3();
       
       function updatePointer(clientX, clientY) {
         const rect = container.getBoundingClientRect();
         mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
         mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
       }
-      container.addEventListener('mousemove', (e) => updatePointer(e.clientX, e.clientY));
-      container.addEventListener('touchstart', (e) => {
-        const touch = e.touches[0];
-        updatePointer(touch.clientX, touch.clientY);
-      }, { passive: false });
       
-      container.addEventListener('click', (e) => {
-        updatePointer(e.clientX, e.clientY);
+      function onPointerDown(clientX, clientY) {
+        updatePointer(clientX, clientY);
         
         // Raycast
         raycaster.setFromCamera(mouse, camera);
         const intersects = raycaster.intersectObjects(scene.children, true);
         
-        let astronautClicked = null;
+        let hitAstronaut = null;
         for (let i = 0; i < intersects.length; i++) {
           if (intersects[i].object.userData && intersects[i].object.userData.isAstronaut) {
-            astronautClicked = intersects[i].object.userData.parentGroup;
+            hitAstronaut = intersects[i].object.userData.parentGroup;
             break;
           }
         }
         
-        if (astronautClicked) {
-          triggerAstronautInteraction(astronautClicked);
+        if (hitAstronaut && astronaut) {
+          isDraggingAstro = true;
+          hasDraggedAstro = false;
+          dragStartMouse.copy(mouse);
+          dragStartTime = Date.now();
+          controls.enabled = false; // Turn off OrbitControls
         }
+      }
+      
+      function onPointerMove(clientX, clientY) {
+        updatePointer(clientX, clientY);
+        
+        if (isDraggingAstro && astronaut) {
+          const dist = mouse.distanceTo(dragStartMouse);
+          if (dist > 0.02 || (Date.now() - dragStartTime) > 150) {
+            hasDraggedAstro = true;
+          }
+          
+          if (hasDraggedAstro) {
+            raycaster.setFromCamera(mouse, camera);
+            raycaster.ray.intersectPlane(dragPlane, dragIntersection);
+            
+            // Bounds limit (keeping the astronaut in the scene)
+            astronaut.position.x = Math.max(-45, Math.min(45, dragIntersection.x));
+            astronaut.position.z = Math.max(-30, Math.min(30, dragIntersection.z));
+            astronaut.position.y = 6.5;
+            
+            // Jetpack flare visual effect
+            const pulseScale = 1.8 + Math.random() * 0.6;
+            astronaut.userData.leftFlame.scale.set(1, pulseScale, 1);
+            astronaut.userData.rightFlame.scale.set(1, pulseScale, 1);
+          }
+        }
+      }
+      
+      function onPointerUp() {
+        if (isDraggingAstro) {
+          isDraggingAstro = false;
+          controls.enabled = true; // Re-enable OrbitControls
+          
+          if (!hasDraggedAstro && astronaut) {
+            triggerAstronautInteraction(astronaut);
+          }
+        }
+      }
+      
+      container.addEventListener('mousedown', (e) => {
+        onPointerDown(e.clientX, e.clientY);
       });
+      container.addEventListener('touchstart', (e) => {
+        const touch = e.touches[0];
+        onPointerDown(touch.clientX, touch.clientY);
+      }, { passive: false });
+      
+      container.addEventListener('mousemove', (e) => {
+        onPointerMove(e.clientX, e.clientY);
+      });
+      container.addEventListener('touchmove', (e) => {
+        const touch = e.touches[0];
+        onPointerMove(touch.clientX, touch.clientY);
+      }, { passive: false });
+      
+      window.addEventListener('mouseup', onPointerUp);
+      window.addEventListener('touchend', onPointerUp);
       
       window.addEventListener('resize', () => {
         if (!container) return;
@@ -5899,33 +5961,39 @@
           
           // 5. Zero-G Drifting Orbit
           const orbitAngle = time * astronaut.userData.speed;
-          const targetX = Math.cos(orbitAngle) * astronaut.userData.orbitRadiusX;
-          const targetZ = Math.sin(orbitAngle) * astronaut.userData.orbitRadiusZ;
-          const targetY = astronaut.userData.targetY + Math.sin(time * 1.5) * 1.2;
+          const pathX = Math.cos(orbitAngle) * astronaut.userData.orbitRadiusX + Math.sin(time * 0.5) * 1.5;
+          const pathZ = Math.sin(orbitAngle) * astronaut.userData.orbitRadiusZ + Math.cos(time * 0.35) * 1.5;
+          const pathY = astronaut.userData.targetY + Math.sin(time * 1.5) * 1.2;
           
-          // Set position with low frequency noise
-          astronaut.position.x = targetX + Math.sin(time * 0.5) * 1.5;
-          astronaut.position.z = targetZ + Math.cos(time * 0.35) * 1.5;
-          astronaut.position.y = targetY;
-          
-          // Auto-orientation along path
-          const nextAngle = (time + 0.02) * astronaut.userData.speed;
-          const nextX = Math.cos(nextAngle) * astronaut.userData.orbitRadiusX + Math.sin((time + 0.02) * 0.5) * 1.5;
-          const nextZ = Math.sin(nextAngle) * astronaut.userData.orbitRadiusZ + Math.cos((time + 0.02) * 0.35) * 1.5;
-          const nextY = astronaut.userData.targetY + Math.sin((time + 0.02) * 1.5) * 1.2;
-          
-          const forwardVec = new THREE.Vector3(
-            nextX - astronaut.position.x,
-            nextY - astronaut.position.y,
-            nextZ - astronaut.position.z
-          ).normalize();
-          
-          const targetLook = new THREE.Vector3().copy(astronaut.position).add(forwardVec);
-          astronaut.lookAt(targetLook);
-          
-          // Tilting/banking into turn
-          const turnCurvature = Math.sin(orbitAngle);
-          astronaut.rotation.z = turnCurvature * 0.25;
+          if (isDraggingAstro) {
+            // Look towards the center platform during drag
+            const lookTarget = new THREE.Vector3(0, 3, 0);
+            astronaut.lookAt(lookTarget);
+          } else {
+            // Spring/Lerp return back to the orbit path!
+            astronaut.position.x = lerp(astronaut.position.x, pathX, 0.08);
+            astronaut.position.y = lerp(astronaut.position.y, pathY, 0.08);
+            astronaut.position.z = lerp(astronaut.position.z, pathZ, 0.08);
+            
+            // Auto-orientation along path
+            const nextAngle = (time + 0.02) * astronaut.userData.speed;
+            const nextX = Math.cos(nextAngle) * astronaut.userData.orbitRadiusX + Math.sin((time + 0.02) * 0.5) * 1.5;
+            const nextZ = Math.sin(nextAngle) * astronaut.userData.orbitRadiusZ + Math.cos((time + 0.02) * 0.35) * 1.5;
+            const nextY = astronaut.userData.targetY + Math.sin((time + 0.02) * 1.5) * 1.2;
+            
+            const forwardVec = new THREE.Vector3(
+              nextX - astronaut.position.x,
+              nextY - astronaut.position.y,
+              nextZ - astronaut.position.z
+            ).normalize();
+            
+            const targetLook = new THREE.Vector3().copy(astronaut.position).add(forwardVec);
+            astronaut.lookAt(targetLook);
+            
+            // Tilting/banking into turn
+            const turnCurvature = Math.sin(orbitAngle);
+            astronaut.rotation.z = turnCurvature * 0.25;
+          }
           
           // Keep text bubble above astronaut
           if (activeAstroSprite) {
