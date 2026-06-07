@@ -353,8 +353,8 @@ function getPlaceholderColor($icon_type) {
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js" defer></script>
   
-  <script src="https://cdn.jsdelivr.net/npm/three@0.124.0/examples/js/loaders/FontLoader.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.124.0/examples/js/geometries/TextGeometry.js" defer></script>
+  <script src="https://unpkg.com/three@0.124.0/examples/js/loaders/FontLoader.js" defer></script>
+  <script src="https://unpkg.com/three@0.124.0/examples/js/geometries/TextGeometry.js" defer></script>
   
   
   <style>
@@ -3604,6 +3604,7 @@ function getPlaceholderColor($icon_type) {
   
   <div class="cursor-bulb" id="cursorBulb"></div>
   <div class="cursor-dot" id="cursorDot"></div>
+  <canvas id="cursorCanvas" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9998;"></canvas>
   
   <nav aria-label="Main navigation">
     <a href="https://relv.biz.id" class="logo">
@@ -4697,14 +4698,66 @@ function getPlaceholderColor($icon_type) {
       targetProgress = percent;
     });
     
-    // --- Custom Cursor ---
+    // --- Custom Cursor & Canvas Particle Engine ---
     const cursorBulb = document.getElementById('cursorBulb');
     const cursorDot = document.getElementById('cursorDot');
+    const cursorCanvas = document.getElementById('cursorCanvas');
+    const ctx = cursorCanvas.getContext('2d');
+    let particles = [];
     
     let mouseX = 0;
     let mouseY = 0;
     let bulbX = 0;
     let bulbY = 0;
+    
+    function resizeCanvas() {
+      cursorCanvas.width = window.innerWidth;
+      cursorCanvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    
+    class Particle {
+      constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.size = Math.random() * 4 + 2;
+        this.speedX = (Math.random() - 0.5) * 6;
+        this.speedY = (Math.random() - 0.5) * 6;
+        this.color = color;
+        this.alpha = 1;
+        this.decay = Math.random() * 0.015 + 0.01;
+      }
+      
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.speedX *= 0.98;
+        this.speedY *= 0.98;
+        this.alpha -= this.decay;
+      }
+      
+      draw() {
+        ctx.save();
+        ctx.globalAlpha = this.alpha;
+        ctx.fillStyle = this.color;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+    
+    function createBurst(x, y) {
+      const colors = ['#00f3ff', '#bc13fe', '#00ff9d', '#ff007c', '#ccff00'];
+      const count = 15;
+      for (let i = 0; i < count; i++) {
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        particles.push(new Particle(x, y, randomColor));
+      }
+    }
     
     document.addEventListener('mousemove', (e) => {
       mouseX = e.clientX;
@@ -4712,6 +4765,24 @@ function getPlaceholderColor($icon_type) {
       
       cursorDot.style.left = mouseX + 'px';
       cursorDot.style.top = mouseY + 'px';
+      
+      // Spawn low probability trail
+      if (Math.random() < 0.15) {
+        const colors = ['#00f3ff', '#bc13fe', '#00ff9d'];
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        particles.push(new Particle(mouseX, mouseY, randomColor));
+      }
+    });
+    
+    document.addEventListener('mousedown', (e) => {
+      cursorDot.style.transform = 'translate(-50%, -50%) scale(0.6)';
+      cursorBulb.style.opacity = '0.35';
+      createBurst(e.clientX, e.clientY);
+    });
+    
+    document.addEventListener('mouseup', () => {
+      cursorDot.style.transform = 'translate(-50%, -50%) scale(1)';
+      cursorBulb.style.opacity = '0.15';
     });
     
     function animateCursor() {
@@ -4721,6 +4792,17 @@ function getPlaceholderColor($icon_type) {
       
       cursorBulb.style.left = bulbX + 'px';
       cursorBulb.style.top = bulbY + 'px';
+      
+      // Render particles on Canvas
+      ctx.clearRect(0, 0, cursorCanvas.width, cursorCanvas.height);
+      for (let i = particles.length - 1; i >= 0; i--) {
+        particles[i].update();
+        if (particles[i].alpha <= 0) {
+          particles.splice(i, 1);
+        } else {
+          particles[i].draw();
+        }
+      }
       
       requestAnimationFrame(animateCursor);
     }
@@ -5884,9 +5966,19 @@ function getPlaceholderColor($icon_type) {
       };
       
       // --- AUDIO SETUP ---
-      const audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+      let audioCtx = null;
+      function getAudioContext() {
+        if (!audioCtx) {
+          audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        return audioCtx;
+      }
+      
       const unlockAudio = () => {
-        if (audioCtx.state === 'suspended') audioCtx.resume();
+        getAudioContext();
         document.removeEventListener('click', unlockAudio);
         document.removeEventListener('touchstart', unlockAudio);
       };
@@ -5894,65 +5986,67 @@ function getPlaceholderColor($icon_type) {
       document.addEventListener('touchstart', unlockAudio);
       
       function playSound(level, count, isLanguage = false) {
-        if (audioCtx.state === 'suspended') return;
-        const oscillator = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
         oscillator.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
+        gainNode.connect(ctx.destination);
         
         if (isLanguage) {
           oscillator.type = 'triangle';
-          oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime);
-          oscillator.frequency.exponentialRampToValueAtTime(659.25, audioCtx.currentTime + 0.04);
-          gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime); // LOUDER
-          gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+          oscillator.frequency.setValueAtTime(523.25, ctx.currentTime);
+          oscillator.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.04);
+          gainNode.gain.setValueAtTime(0.08, ctx.currentTime); // LOUDER
+          gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
           oscillator.start();
-          oscillator.stop(audioCtx.currentTime + 0.1);
+          oscillator.stop(ctx.currentTime + 0.1);
         } else {
           const scale = [261.63, 293.66, 329.63, 392.00, 440.00];
           const baseFreq = scale[level] || 261.63;
           const finalFreq = baseFreq + (count * 4);
           
           oscillator.type = 'sine';
-          oscillator.frequency.setValueAtTime(finalFreq, audioCtx.currentTime);
-          oscillator.frequency.exponentialRampToValueAtTime(finalFreq * 1.3, audioCtx.currentTime + 0.06);
+          oscillator.frequency.setValueAtTime(finalFreq, ctx.currentTime);
+          oscillator.frequency.exponentialRampToValueAtTime(finalFreq * 1.3, ctx.currentTime + 0.06);
           
-          gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime); // LOUDER
-          gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+          gainNode.gain.setValueAtTime(0.15, ctx.currentTime); // LOUDER
+          gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
           oscillator.start();
-          oscillator.stop(audioCtx.currentTime + 0.12);
+          oscillator.stop(ctx.currentTime + 0.12);
         }
       }
 
       function playBuildUpSound() {
-        if (audioCtx.state === 'suspended') return;
+        const ctx = getAudioContext();
+        if (!ctx) return;
         
         // Sweeping Oscillator (low to high synth sweep)
-        const osc = audioCtx.createOscillator();
-        const filter = audioCtx.createBiquadFilter();
-        const gainNode = audioCtx.createGain();
+        const osc = ctx.createOscillator();
+        const filter = ctx.createBiquadFilter();
+        const gainNode = ctx.createGain();
         
         osc.connect(filter);
         filter.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
+        gainNode.connect(ctx.destination);
         
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(700, audioCtx.currentTime + 0.8);
+        osc.frequency.setValueAtTime(150, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(700, ctx.currentTime + 0.8);
         
         // High-resonance low-pass filter sweep for portal whoosh
         filter.type = 'lowpass';
-        filter.Q.setValueAtTime(8, audioCtx.currentTime);
-        filter.frequency.setValueAtTime(300, audioCtx.currentTime);
-        filter.frequency.exponentialRampToValueAtTime(2000, audioCtx.currentTime + 0.8);
+        filter.Q.setValueAtTime(8, ctx.currentTime);
+        filter.frequency.setValueAtTime(300, ctx.currentTime);
+        filter.frequency.exponentialRampToValueAtTime(2000, ctx.currentTime + 0.8);
         
         // Smooth volume envelope
-        gainNode.gain.setValueAtTime(0.001, audioCtx.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0.12, audioCtx.currentTime + 0.15);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.85);
+        gainNode.gain.setValueAtTime(0.001, ctx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.15);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.85);
         
         osc.start();
-        osc.stop(audioCtx.currentTime + 0.9);
+        osc.stop(ctx.currentTime + 0.9);
       }
 
       function createAstronaut() {
@@ -6187,36 +6281,37 @@ function getPlaceholderColor($icon_type) {
       }
 
       function playAstroSound(type) {
-        if (audioCtx.state === 'suspended') return;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
         osc.connect(gain);
-        gain.connect(audioCtx.destination);
+        gain.connect(ctx.destination);
         
         if (type === 'boost') {
           osc.type = 'triangle';
-          osc.frequency.setValueAtTime(80, audioCtx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.3);
-          gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+          osc.frequency.setValueAtTime(80, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.3);
+          gain.gain.setValueAtTime(0.18, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
           osc.start();
-          osc.stop(audioCtx.currentTime + 0.5);
+          osc.stop(ctx.currentTime + 0.5);
         } else if (type === 'greeting') {
           osc.type = 'sine';
-          osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
-          osc.frequency.setValueAtTime(880.00, audioCtx.currentTime + 0.08);
-          gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+          osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+          osc.frequency.setValueAtTime(880.00, ctx.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.12, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
           osc.start();
-          osc.stop(audioCtx.currentTime + 0.3);
+          osc.stop(ctx.currentTime + 0.3);
         } else if (type === 'teleport') {
           osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.25);
-          gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+          osc.frequency.setValueAtTime(880, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.25);
+          gain.gain.setValueAtTime(0.1, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
           osc.start();
-          osc.stop(audioCtx.currentTime + 0.3);
+          osc.stop(ctx.currentTime + 0.3);
         }
       }
 
