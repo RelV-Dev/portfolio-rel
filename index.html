@@ -15,6 +15,10 @@
   
   <link rel="canonical" href="https://relv.biz.id">
   
+  <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
+  <link rel="preconnect" href="https://data-id-card.vercel.app" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+
   <link rel="icon" href="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/rv-48.png">
   <link rel="apple-touch-icon" sizes="180x180" href="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/rv-180.png">
   
@@ -196,6 +200,17 @@
             "name": "Stanford University"
           }
         }]
+      },
+      {
+        "@type": "Service",
+        "@id": "https://relv.biz.id/#freelance",
+        "name": "Freelance Development Services",
+        "provider": {
+          "@id": "https://relv.biz.id/#person"
+        },
+        "serviceType": ["Web Development", "IoT Development", "UI/UX Design", "Data Science", "Video Editing"],
+        "areaServed": "ID",
+        "description": "Professional freelance services in web development, IoT systems, design, data science, and video editing with proven client testimonials."
       }]
     }
   </script>
@@ -205,9 +220,12 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet">
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
@@ -215,7 +233,6 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
   
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FontLoader.js"></script>
@@ -244,7 +261,11 @@
       padding: 0;
       box-sizing: border-box;
       -webkit-font-smoothing: antialiased;
-      cursor: none !important;
+    }
+
+    /* Custom cursor only on non-touch devices */
+    @media (hover: hover) and (pointer: fine) {
+      * { cursor: none !important; }
     }
     
     ::-webkit-scrollbar {
@@ -665,7 +686,7 @@
     }
     
     .hero-text h1 {
-      font-size: 4.5rem;
+      font-size: clamp(2.2rem, 5vw, 4.5rem);
       font-weight: 800;
       line-height: 1.1;
       margin-bottom: 15px;
@@ -1015,7 +1036,7 @@
     /* --- SKILLS --- */
     .skills-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 30px;
       max-width: 1200px;
       margin: 0 auto;
@@ -1819,7 +1840,7 @@
     
     .gallery-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 30px;
       max-width: 1300px;
       margin: 0 auto;
@@ -2195,6 +2216,541 @@
         opacity: 0;
       }
     }
+
+    /* --- PAGINATION --- */
+    .pagination-controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      margin-top: 50px;
+      flex-wrap: wrap;
+    }
+
+    .pagination-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-border);
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      cursor: pointer;
+    }
+
+    .pagination-btn:hover:not(.disabled):not(.active) {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      transform: translateY(-2px);
+    }
+
+    .pagination-btn.active {
+      background: var(--primary);
+      color: #000;
+      border-color: transparent;
+      box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
+      font-weight: 700;
+    }
+
+    .pagination-btn.disabled {
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
+    .pagination-btn.nav-arrow {
+      width: 48px;
+      font-size: 1rem;
+    }
+
+    /* --- TESTIMONIAL SECTION --- */
+    .testimonial-section {
+      padding: 100px 5%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .testimonial-section::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(188, 19, 254, 0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .testimonial-swiper {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px 0 60px;
+      overflow: visible;
+    }
+
+    .testimonial-card {
+      background: rgba(20, 20, 25, 0.6);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      overflow: hidden;
+      transition: all 0.4s ease;
+      display: flex;
+      flex-direction: column;
+      height: auto;
+    }
+
+    .testimonial-card:hover {
+      border-color: rgba(188, 19, 254, 0.4);
+      transform: translateY(-5px);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+    }
+
+    .testimonial-img-wrapper {
+      position: relative;
+      height: 220px;
+      overflow: hidden;
+    }
+
+    .testimonial-img-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+    }
+
+    .testimonial-card:hover .testimonial-img-wrapper img {
+      transform: scale(1.05);
+    }
+
+    .testimonial-img-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      padding: 15px 20px;
+      background: linear-gradient(transparent, rgba(0,0,0,0.8));
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .testimonial-category-badge {
+      padding: 4px 14px;
+      border-radius: 50px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: rgba(188, 19, 254, 0.3);
+      color: var(--secondary);
+      border: 1px solid rgba(188, 19, 254, 0.4);
+    }
+
+    .testimonial-card-body {
+      padding: 25px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .testimonial-customer {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+      font-family: var(--font-mono);
+    }
+
+    .testimonial-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 12px;
+      line-height: 1.3;
+    }
+
+    .testimonial-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: auto;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .testimonial-price {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--primary);
+      text-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+    }
+
+    .testimonial-date {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .testimonial-view-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 15px;
+      padding: 10px 20px;
+      background: rgba(188, 19, 254, 0.15);
+      border: 1px solid rgba(188, 19, 254, 0.3);
+      border-radius: 50px;
+      color: var(--secondary);
+      font-family: var(--font-main);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      width: fit-content;
+    }
+
+    .testimonial-view-btn:hover {
+      background: var(--secondary);
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(188, 19, 254, 0.4);
+    }
+
+    /* Swiper custom styling */
+    .testimonial-swiper .swiper-pagination-bullet {
+      background: var(--text-muted);
+      opacity: 0.5;
+      width: 10px;
+      height: 10px;
+      transition: all 0.3s ease;
+    }
+
+    .testimonial-swiper .swiper-pagination-bullet-active {
+      background: var(--secondary);
+      opacity: 1;
+      width: 28px;
+      border-radius: 5px;
+      box-shadow: 0 0 10px var(--secondary);
+    }
+
+    .testimonial-swiper .swiper-button-prev,
+    .testimonial-swiper .swiper-button-next {
+      color: var(--secondary);
+      background: rgba(20, 20, 25, 0.6);
+      backdrop-filter: blur(10px);
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 1px solid var(--glass-border);
+      transition: all 0.3s ease;
+    }
+
+    .testimonial-swiper .swiper-button-prev::after,
+    .testimonial-swiper .swiper-button-next::after {
+      font-size: 1rem;
+      font-weight: bold;
+    }
+
+    .testimonial-swiper .swiper-button-prev:hover,
+    .testimonial-swiper .swiper-button-next:hover {
+      background: var(--secondary);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 0 20px rgba(188, 19, 254, 0.4);
+    }
+
+    .testimonial-empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+
+    .testimonial-empty i {
+      font-size: 3rem;
+      margin-bottom: 15px;
+      color: rgba(255,255,255,0.1);
+    }
+
+    /* --- LIGHTBOX MODAL --- */
+    .lightbox-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(10px);
+      z-index: 99998;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.4s ease;
+      padding: 20px;
+    }
+
+    .lightbox-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .lightbox-content {
+      background: rgba(15, 15, 20, 0.95);
+      backdrop-filter: blur(30px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      max-width: 800px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      transform: scale(0.9) translateY(20px);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      padding: 0;
+    }
+
+    .lightbox-overlay.active .lightbox-content {
+      transform: scale(1) translateY(0);
+    }
+
+    .lightbox-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 30px;
+      border-bottom: 1px solid var(--glass-border);
+      position: sticky;
+      top: 0;
+      background: rgba(15, 15, 20, 0.95);
+      backdrop-filter: blur(20px);
+      z-index: 2;
+      border-radius: 24px 24px 0 0;
+    }
+
+    .lightbox-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .lightbox-close {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--glass-border);
+      color: var(--text-muted);
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .lightbox-close:hover {
+      background: rgba(255, 77, 87, 0.2);
+      border-color: #ff4d57;
+      color: #ff4d57;
+      transform: rotate(90deg);
+    }
+
+    .lightbox-body {
+      padding: 30px;
+    }
+
+    .lightbox-images {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .lightbox-img-item {
+      position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--glass-border);
+      aspect-ratio: 1;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .lightbox-img-item:hover {
+      border-color: var(--primary);
+      transform: scale(1.03);
+    }
+
+    .lightbox-img-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .lightbox-img-label {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 8px;
+      background: linear-gradient(transparent, rgba(0,0,0,0.9));
+      font-size: 0.7rem;
+      text-align: center;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .lightbox-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    .lightbox-detail-item {
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .lightbox-detail-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 5px;
+    }
+
+    .lightbox-detail-value {
+      font-size: 1rem;
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .lightbox-detail-value.price {
+      color: var(--primary);
+      font-family: var(--font-mono);
+      font-size: 1.2rem;
+    }
+
+    .lightbox-links {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    .lightbox-link-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      font-family: var(--font-main);
+    }
+
+    .lightbox-link-btn.project {
+      background: rgba(0, 243, 255, 0.15);
+      border: 1px solid rgba(0, 243, 255, 0.3);
+      color: var(--primary);
+    }
+
+    .lightbox-link-btn.project:hover {
+      background: var(--primary);
+      color: #000;
+    }
+
+    .lightbox-link-btn.video {
+      background: rgba(255, 0, 0, 0.15);
+      border: 1px solid rgba(255, 0, 0, 0.3);
+      color: #ff4444;
+    }
+
+    .lightbox-link-btn.video:hover {
+      background: #ff4444;
+      color: #fff;
+    }
+
+    /* Lightbox fullscreen image viewer */
+    .lightbox-fullimg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.95);
+      z-index: 99999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      cursor: zoom-out;
+    }
+
+    .lightbox-fullimg.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .lightbox-fullimg img {
+      max-width: 90%;
+      max-height: 90%;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+
+    /* Mobile responsive for lightbox */
+    @media (max-width: 768px) {
+      .lightbox-images {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .lightbox-img-item {
+        aspect-ratio: 16/9;
+      }
+
+      .lightbox-details {
+        grid-template-columns: 1fr;
+      }
+
+      .lightbox-content {
+        border-radius: 16px;
+      }
+
+      .lightbox-body {
+        padding: 20px;
+      }
+
+      .testimonial-swiper .swiper-button-prev,
+      .testimonial-swiper .swiper-button-next {
+        display: none;
+      }
+    }
+
+    /* Hide cursor elements on touch devices */
+    @media (hover: none) {
+      .cursor-bulb, .cursor-dot {
+        display: none !important;
+      }
+    }
   </style>
 </head>
 
@@ -2209,7 +2765,7 @@
   <div class="cursor-bulb" id="cursorBulb"></div>
   <div class="cursor-dot" id="cursorDot"></div>
   
-  <nav>
+  <nav aria-label="Main navigation">
     <a href="https://relv.biz.id" class="logo">
       <i class="fas fa-code"></i> RelV
     </a>
@@ -2224,6 +2780,7 @@
       <li><a href="#home" class="active">Home</a></li>
       <li><a href="#education">Education</a></li>
       <li><a href="#skills">Skills</a></li>
+      <li><a href="#testimonials">Testimonials</a></li>
       <li><a href="#gallery">Gallery</a></li>
     </ul>
   </nav>
@@ -2248,6 +2805,9 @@
           </a>
           <a href="https://github.com/RelV-Dev" target="_blank" class="social-btn" aria-label="GitHub">
             <i class="fab fa-github"></i>
+          </a>
+          <a href="https://wa.me/6285712225507?text=Halo%2C%20saya%20mendapatkan%20kontak%20Anda%20melalui%20website%20portofolio.%0A%0ASaya%20tertarik%20untuk%20berdiskusi%20mengenai%20kebutuhan%20yang%20saya%20miliki.%20Apakah%20saat%20ini%20Anda%20tersedia%20untuk%20konsultasi%3F%0A%0ATerima%20kasih." target="_blank" class="social-btn" aria-label="WhatsApp">
+            <i class="fab fa-whatsapp"></i>
           </a>
         </div>
       </div>
@@ -2449,6 +3009,27 @@
       <div id="github-3d-canvas"></div>
     </div>
   </section>
+
+  <!-- TESTIMONIALS SECTION -->
+  <section id="testimonials" class="testimonial-section">
+    <div class="section-header" data-aos="fade-up">
+      <h2 class="section-title">Freelance Testimonials</h2>
+    </div>
+
+    <div class="swiper testimonial-swiper" data-aos="fade-up">
+      <div class="swiper-wrapper" id="testimonialSlides">
+        <!-- Slides will be injected by JS from Supabase -->
+      </div>
+      <div class="swiper-pagination"></div>
+      <div class="swiper-button-prev"></div>
+      <div class="swiper-button-next"></div>
+    </div>
+
+    <div class="testimonial-empty" id="testimonialEmpty" style="display:none;">
+      <i class="fas fa-box-open"></i>
+      <p>No testimonials yet. Check back soon!</p>
+    </div>
+  </section>
   
   <div class="chat-widget-container" id="chatWidgetContainer">
     <div class="chat-window" id="chatWindow">
@@ -2514,7 +3095,7 @@
     <div class="gallery-grid">
       <div class="gallery-card" data-category="projects">
         <div class="card-img">
-          <img src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/project-farel_OSIS%20SELECTION%20SYSTEM%20BASED%20SNBP%20WEB.webp" alt="SELECTION SYSTEM OF OSIS">
+          <img loading="lazy" src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/project-farel_OSIS%20SELECTION%20SYSTEM%20BASED%20SNBP%20WEB.webp" alt="SELECTION SYSTEM OF OSIS">
           <div class="card-overlay">
             <a href="https://github.com/RelV-Dev" class="overlay-btn" target="_blank" title="Code"><i class="fab fa-github"></i></a>
             <a href="https://osissmaga.my.id/oprec/2025" class="overlay-btn" target="_blank" title="Live Demo"><i class="fas fa-link"></i></a>
@@ -2531,7 +3112,7 @@
       
       <div class="gallery-card" data-category="projects">
         <div class="card-img">
-          <img src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/project-farel_WEB%20EDUKASI%20SEJARAH.webp" alt="EDUKASI SEJARAH DIGITAL">
+          <img loading="lazy" src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/project-farel_WEB%20EDUKASI%20SEJARAH.webp" alt="EDUKASI SEJARAH DIGITAL">
           <a href="https://smanegeri3pati.site" class="overlay-btn" target="_blank" title="Live Demo"><i class="fas fa-link"></i></a>
         </div>
         <div class="card-content">
@@ -2544,7 +3125,7 @@
       
       <div class="gallery-card" data-category="projects">
         <div class="card-img">
-          <img src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/project-farel_MEP%20IOT%20CONVERGENCE%20IN%20FLEXIBLE%20SOLLAR%20CELLS%20DEVELOPING%20AN%20ESP%2032%20BASED%20SMART%20MONITORING%20SYSTEM.webp" alt="IOT SYSTEM">
+          <img loading="lazy" src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/project-farel_MEP%20IOT%20CONVERGENCE%20IN%20FLEXIBLE%20SOLLAR%20CELLS%20DEVELOPING%20AN%20ESP%2032%20BASED%20SMART%20MONITORING%20SYSTEM.webp" alt="IOT SYSTEM">
           <a href="https://smanegeri3pati.site" class="overlay-btn" target="_blank" title="Live Demo"><i class="fas fa-link"></i></a>
         </div>
         <div class="card-content">
@@ -2557,7 +3138,7 @@
       
       <div class="gallery-card" data-category="awards">
         <div class="card-img">
-          <img src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_JUARA%201%20KTI%20TINGKAT%20NASIONAL%20IEEE%20FEST%20UNIVERSITAS%20BRAWIJAYA.webp" alt="IEEE FEST SB UB">
+          <img loading="lazy" src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_JUARA%201%20KTI%20TINGKAT%20NASIONAL%20IEEE%20FEST%20UNIVERSITAS%20BRAWIJAYA.webp" alt="IEEE FEST SB UB">
           <div class="card-overlay">
             <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_JUARA%201%20KTI%20TINGKAT%20NASIONAL%20IEEE%20FEST%20UNIVERSITAS%20BRAWIJAYA.webp" class="overlay-btn"><i class="fas fa-trophy"></i></a>
           </div>
@@ -2571,7 +3152,7 @@
       
       <div class="gallery-card" data-category="awards">
         <div class="card-img">
-          <img src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_PIAGAM%20FLS3N%20SMA%20KAB%20PATI%202025.webp" alt="JUARA 1 FLS3N KAB. PATI">
+          <img loading="lazy" src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_PIAGAM%20FLS3N%20SMA%20KAB%20PATI%202025.webp" alt="JUARA 1 FLS3N KAB. PATI">
           <div class="card-overlay">
             <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_PIAGAM%20FLS3N%20SMA%20KAB%20PATI%202025.webp" class="overlay-btn"><i class="fas fa-trophy"></i></a>
           </div>
@@ -2600,7 +3181,7 @@
       
       <div class="gallery-card" data-category="awards">
         <div class="card-img">
-          <img src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_JUARA%202%20TECHNOFAIR%20TINGKAT%20NASIONAL.webp" alt="TechnoFair National App Development">
+          <img loading="lazy" src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_JUARA%202%20TECHNOFAIR%20TINGKAT%20NASIONAL.webp" alt="TechnoFair National App Development">
           <div class="card-overlay">
             <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_JUARA%202%20TECHNOFAIR%20TINGKAT%20NASIONAL.webp" class="overlay-btn" title="View Certificate">
               <i class="fas fa-trophy"></i>
@@ -2618,7 +3199,7 @@
       
       <div class="gallery-card" data-category="awards">
         <div class="card-img">
-          <img src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_JUARA%203%20KTI%20Tk.%20DIY-JATENG%20UNIVERSITAS%20AHMAD%20DAHLAN.webp" alt="LKTI UAD FEST 2025">
+          <img loading="lazy" src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_JUARA%203%20KTI%20Tk.%20DIY-JATENG%20UNIVERSITAS%20AHMAD%20DAHLAN.webp" alt="LKTI UAD FEST 2025">
           <div class="card-overlay">
             <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_JUARA%203%20KTI%20Tk.%20DIY-JATENG%20UNIVERSITAS%20AHMAD%20DAHLAN.webp" class="overlay-btn"><i class="fas fa-trophy"></i></a>
           </div>
@@ -2632,7 +3213,7 @@
       
       <div class="gallery-card" data-category="awards">
         <div class="card-img">
-          <img src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_Google%20Kickstart%202021.webp" alt="Google Kick Start 2021">
+          <img loading="lazy" src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_Google%20Kickstart%202021.webp" alt="Google Kick Start 2021">
           <div class="card-overlay">
             <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_Google%20Kickstart%202021.webp" class="overlay-btn" target="_blank" title="View Certificate">
               <i class="fas fa-trophy"></i>
@@ -2650,7 +3231,7 @@
       
       <div class="gallery-card" data-category="certificates">
         <div class="card-img">
-          <img src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_EDX%20MIT%20DATA%20SCIENCE.webp" alt="MITx edX Data Science Certificate">
+          <img loading="lazy" src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_EDX%20MIT%20DATA%20SCIENCE.webp" alt="MITx edX Data Science Certificate">
           <div class="card-overlay">
             <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_EDX%20MIT%20DATA%20SCIENCE.webp" class="overlay-btn" target="_blank" title="View Certificate">
               <i class="fas fa-certificate"></i>
@@ -2668,7 +3249,7 @@
       
       <div class="gallery-card" data-category="certificates">
         <div class="card-img">
-          <img src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_EDX_HARVARD_1027168179162.webp" alt="HarvardX edX Data Science and Machine Learning">
+          <img loading="lazy" src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_EDX_HARVARD_1027168179162.webp" alt="HarvardX edX Data Science and Machine Learning">
           <div class="card-overlay">
             <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_EDX_HARVARD_1027168179162.webp" class="overlay-btn" target="_blank" title="View Certificate">
               <i class="fas fa-certificate"></i>
@@ -2686,7 +3267,7 @@
       
       <div class="gallery-card" data-category="certificates">
         <div class="card-img">
-          <img src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_Bug%20Bounty%20SainsIn.webp" alt="Bug Bounty OU-Fest SainsIn">
+          <img loading="lazy" src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_Bug%20Bounty%20SainsIn.webp" alt="Bug Bounty OU-Fest SainsIn">
           <div class="card-overlay">
             <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_Bug%20Bounty%20SainsIn.webp" class="overlay-btn" target="_blank" title="View Certificate">
               <i class="fas fa-certificate"></i>
@@ -2704,7 +3285,7 @@
       
       <div class="gallery-card" data-category="certificates">
         <div class="card-img">
-          <img src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_KOMINFO_Python%20Program%20Online%20Academy.webp" alt="Kominfo Python Programming Online Academy">
+          <img loading="lazy" src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_KOMINFO_Python%20Program%20Online%20Academy.webp" alt="Kominfo Python Programming Online Academy">
           <div class="card-overlay">
             <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_KOMINFO_Python%20Program%20Online%20Academy.webp" class="overlay-btn" target="_blank" title="View Certificate">
               <i class="fas fa-certificate"></i>
@@ -2722,7 +3303,7 @@
       
       <div class="gallery-card" data-category="certificates">
         <div class="card-img">
-          <img src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_KOMINFO_DIGITAL%20SKILLS%20ONLINE%20ACADEMY.webp" alt="Kominfo Digital Skills Online Academy">
+          <img loading="lazy" src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_KOMINFO_DIGITAL%20SKILLS%20ONLINE%20ACADEMY.webp" alt="Kominfo Digital Skills Online Academy">
           <div class="card-overlay">
             <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_KOMINFO_DIGITAL%20SKILLS%20ONLINE%20ACADEMY.webp" class="overlay-btn" target="_blank" title="View Certificate">
               <i class="fas fa-certificate"></i>
@@ -2740,7 +3321,7 @@
       
       <div class="gallery-card" data-category="certificates">
         <div class="card-img">
-          <img src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_DataCamp-Data%20Scientist%20with%20Python%20Track.webp" alt="DataCamp Data Scientist with Python">
+          <img loading="lazy" src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_DataCamp-Data%20Scientist%20with%20Python%20Track.webp" alt="DataCamp Data Scientist with Python">
           <div class="card-overlay">
             <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_DataCamp-Data%20Scientist%20with%20Python%20Track.webp" class="overlay-btn" target="_blank" title="View Certificate">
               <i class="fas fa-certificate"></i>
@@ -2758,7 +3339,7 @@
       
       <div class="gallery-card" data-category="certificates">
         <div class="card-img">
-          <img src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_BANGKIT%20ACADEMY%20-%20MACHINE%20LEARNING.webp" alt="Bangkit Academy Machine Learning Certificate">
+          <img loading="lazy" src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_BANGKIT%20ACADEMY%20-%20MACHINE%20LEARNING.webp" alt="Bangkit Academy Machine Learning Certificate">
           <div class="card-overlay">
             <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_BANGKIT%20ACADEMY%20-%20MACHINE%20LEARNING.webp" class="overlay-btn" target="_blank" title="View Certificate">
               <i class="fas fa-certificate"></i>
@@ -2776,7 +3357,7 @@
       
       <div class="gallery-card" data-category="certificates">
         <div class="card-img">
-          <img src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_Stanford%20University%20-%20SQL.webp" alt="Stanford University SQL">
+          <img loading="lazy" src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_Stanford%20University%20-%20SQL.webp" alt="Stanford University SQL">
           <div class="card-overlay">
             <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_Stanford%20University%20-%20SQL.webp" class="overlay-btn" target="_blank">
               <i class="fas fa-certificate"></i>
@@ -2792,7 +3373,7 @@
       
       <div class="gallery-card" data-category="certificates">
         <div class="card-img">
-          <img src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_Stanford%20University%20-%20Relational%20Design%20Thery.webp" alt="Stanford University Relational Design Theory">
+          <img loading="lazy" src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_Stanford%20University%20-%20Relational%20Design%20Thery.webp" alt="Stanford University Relational Design Theory">
           <div class="card-overlay">
             <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_Stanford%20University%20-%20Relational%20Design%20Thery.webp" class="overlay-btn" target="_blank">
               <i class="fas fa-certificate"></i>
@@ -2808,7 +3389,7 @@
       
       <div class="gallery-card" data-category="certificates">
         <div class="card-img">
-          <img src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_Stanford%20University%20-%20On-Line%20Analytical%20Processing.webp" alt="Stanford University OLAP">
+          <img loading="lazy" src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_Stanford%20University%20-%20On-Line%20Analytical%20Processing.webp" alt="Stanford University OLAP">
           <div class="card-overlay">
             <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_Stanford%20University%20-%20On-Line%20Analytical%20Processing.webp" class="overlay-btn" target="_blank">
               <i class="fas fa-certificate"></i>
@@ -2824,7 +3405,7 @@
       
       <div class="gallery-card" data-category="certificates">
         <div class="card-img">
-          <img src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_Stanford%20University%20-%20Views%20and%20Authorization.webp" alt="Stanford University Views and Authorization">
+          <img loading="lazy" src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_Stanford%20University%20-%20Views%20and%20Authorization.webp" alt="Stanford University Views and Authorization">
           <div class="card-overlay">
             <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_Stanford%20University%20-%20Views%20and%20Authorization.webp" class="overlay-btn" target="_blank">
               <i class="fas fa-certificate"></i>
@@ -2840,7 +3421,7 @@
       
       <div class="gallery-card" data-category="certificates">
         <div class="card-img">
-          <img src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_Stanford%20University%20-%20XSLT.webp" alt="Stanford University XSLT">
+          <img loading="lazy" src="https://raw.githubusercontent.com/RelV-Dev/Certificate/refs/heads/main/FAREL_Stanford%20University%20-%20XSLT.webp" alt="Stanford University XSLT">
           <div class="card-overlay">
             <a href="https://github.com/RelV-Dev/Certificate/blob/main/FAREL_Stanford%20University%20-%20XSLT.webp" class="overlay-btn" target="_blank">
               <i class="fas fa-certificate"></i>
@@ -2854,8 +3435,30 @@
         </div>
       </div>
     </div>
+
+    <div class="pagination-controls" id="galleryPagination">
+      <!-- Pagination buttons injected by JS -->
+    </div>
   </section>
   
+  <!-- LIGHTBOX MODAL -->
+  <div class="lightbox-overlay" id="lightboxOverlay">
+    <div class="lightbox-content">
+      <div class="lightbox-header">
+        <h3 class="lightbox-title" id="lightboxTitle">Project Details</h3>
+        <button class="lightbox-close" id="lightboxClose"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="lightbox-body" id="lightboxBody">
+        <!-- Content injected by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- FULLSCREEN IMAGE VIEWER -->
+  <div class="lightbox-fullimg" id="lightboxFullImg">
+    <img src="" alt="Full size preview" id="fullImgSrc">
+  </div>
+
   <footer>
     <div class="footer-content">
       <a href="#" class="footer-logo">Rel<span>V</span></a>
@@ -2869,6 +3472,7 @@
     </div>
   </footer>
   
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
   <script>
     // Init AOS with custom settings
@@ -3352,32 +3956,277 @@
       });
     });
     
-    // --- Gallery Filter ---
+    // --- Gallery Filter + Pagination ---
     const filterBtns = document.querySelectorAll('.filter-btn');
     const galleryItems = document.querySelectorAll('.gallery-card');
-    
+    const ITEMS_PER_PAGE = 4;
+    let currentPage = 1;
+    let currentFilter = 'all';
+
+    function getFilteredItems() {
+      return Array.from(galleryItems).filter(item => {
+        return currentFilter === 'all' || item.getAttribute('data-category') === currentFilter;
+      });
+    }
+
+    function renderPagination() {
+      const filtered = getFilteredItems();
+      const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+      const container = document.getElementById('galleryPagination');
+      
+      if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+      }
+
+      let html = `<button class="pagination-btn nav-arrow ${currentPage === 1 ? 'disabled' : ''}" data-page="prev"><i class="fas fa-chevron-left"></i></button>`;
+      
+      for (let i = 1; i <= totalPages; i++) {
+        html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+      }
+      
+      html += `<button class="pagination-btn nav-arrow ${currentPage === totalPages ? 'disabled' : ''}" data-page="next"><i class="fas fa-chevron-right"></i></button>`;
+      
+      container.innerHTML = html;
+      
+      container.querySelectorAll('.pagination-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const page = btn.getAttribute('data-page');
+          if (page === 'prev' && currentPage > 1) currentPage--;
+          else if (page === 'next' && currentPage < totalPages) currentPage++;
+          else if (page !== 'prev' && page !== 'next') currentPage = parseInt(page);
+          showPage();
+        });
+      });
+    }
+
+    function showPage() {
+      const filtered = getFilteredItems();
+      const start = (currentPage - 1) * ITEMS_PER_PAGE;
+      const end = start + ITEMS_PER_PAGE;
+
+      galleryItems.forEach(item => {
+        item.classList.add('hide');
+        item.classList.remove('anim-in', 'anim-out');
+      });
+
+      filtered.forEach((item, index) => {
+        if (index >= start && index < end) {
+          item.classList.remove('hide');
+          item.classList.add('anim-in');
+        }
+      });
+
+      renderPagination();
+    }
+
     filterBtns.forEach(btn => {
       btn.addEventListener('click', () => {
         filterBtns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        
-        const filterValue = btn.getAttribute('data-filter');
-        
-        galleryItems.forEach(item => {
-          if (filterValue === 'all' || item.getAttribute('data-category') === filterValue) {
-            item.classList.remove('hide');
-            item.classList.remove('anim-out');
-            item.classList.add('anim-in');
-          } else {
-            item.classList.add('anim-out');
-            item.classList.remove('anim-in');
-            setTimeout(() => {
-              item.classList.add('hide');
-            }, 300);
-          }
-        });
+        currentFilter = btn.getAttribute('data-filter');
+        currentPage = 1;
+        showPage();
       });
     });
+
+    // Initial render
+    showPage();
+
+    // --- TESTIMONIALS: Supabase + Swiper ---
+    const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+
+    let testimonialSwiper = null;
+
+    function formatRupiah(num) {
+      return 'Rp ' + num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
+    function formatDate(dateStr) {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    function getCategoryColor(cat) {
+      const colors = {
+        'Web Development': { bg: 'rgba(0, 243, 255, 0.2)', color: '#00f3ff', border: 'rgba(0, 243, 255, 0.4)' },
+        'Design': { bg: 'rgba(188, 19, 254, 0.2)', color: '#bc13fe', border: 'rgba(188, 19, 254, 0.4)' },
+        'IoT': { bg: 'rgba(0, 255, 157, 0.2)', color: '#00ff9d', border: 'rgba(0, 255, 157, 0.4)' },
+        'Data Science': { bg: 'rgba(255, 165, 0, 0.2)', color: '#ffa500', border: 'rgba(255, 165, 0, 0.4)' },
+        'Video Editing': { bg: 'rgba(255, 68, 68, 0.2)', color: '#ff4444', border: 'rgba(255, 68, 68, 0.4)' },
+      };
+      return colors[cat] || { bg: 'rgba(255,255,255,0.1)', color: '#fff', border: 'rgba(255,255,255,0.2)' };
+    }
+
+    async function loadTestimonials() {
+      try {
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const { data, error } = await supabase
+          .from('testimonials')
+          .select('*')
+          .eq('is_visible', true)
+          .order('transaction_date', { ascending: false });
+
+        if (error) throw error;
+
+        const slidesContainer = document.getElementById('testimonialSlides');
+        const emptyState = document.getElementById('testimonialEmpty');
+
+        if (!data || data.length === 0) {
+          emptyState.style.display = 'block';
+          document.querySelector('.testimonial-swiper').style.display = 'none';
+          return;
+        }
+
+        slidesContainer.innerHTML = data.map(t => {
+          const catColor = getCategoryColor(t.category);
+          return `
+            <div class="swiper-slide">
+              <div class="testimonial-card" data-testimonial='${JSON.stringify(t).replace(/'/g, "&#39;")}'>
+                <div class="testimonial-img-wrapper">
+                  <img src="${t.project_proof_url}" alt="${t.project_title} - Project proof" loading="lazy">
+                  <div class="testimonial-img-overlay">
+                    <span class="testimonial-category-badge" style="background:${catColor.bg};color:${catColor.color};border-color:${catColor.border}">${t.category}</span>
+                  </div>
+                </div>
+                <div class="testimonial-card-body">
+                  <span class="testimonial-customer"><i class="fas fa-user"></i> ${t.customer_name}</span>
+                  <h3 class="testimonial-title">${t.project_title}</h3>
+                  <div class="testimonial-meta">
+                    <span class="testimonial-price">${formatRupiah(t.price)}</span>
+                    <span class="testimonial-date"><i class="far fa-calendar"></i> ${formatDate(t.transaction_date)}</span>
+                  </div>
+                  <button class="testimonial-view-btn" onclick="openLightbox(this.closest('.testimonial-card'))">
+                    <i class="fas fa-eye"></i> View Details
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        // Initialize Swiper
+        testimonialSwiper = new Swiper('.testimonial-swiper', {
+          slidesPerView: 1,
+          spaceBetween: 24,
+          loop: data.length > 3,
+          pagination: {
+            el: '.testimonial-swiper .swiper-pagination',
+            clickable: true,
+          },
+          navigation: {
+            nextEl: '.testimonial-swiper .swiper-button-next',
+            prevEl: '.testimonial-swiper .swiper-button-prev',
+          },
+          breakpoints: {
+            640: { slidesPerView: 2 },
+            1024: { slidesPerView: 3 },
+          },
+        });
+
+      } catch (err) {
+        console.warn('Testimonials load failed:', err.message);
+        document.getElementById('testimonialEmpty').style.display = 'block';
+        document.querySelector('.testimonial-swiper').style.display = 'none';
+      }
+    }
+
+    // --- LIGHTBOX MODAL ---
+    function openLightbox(card) {
+      const t = JSON.parse(card.getAttribute('data-testimonial'));
+      const overlay = document.getElementById('lightboxOverlay');
+      const title = document.getElementById('lightboxTitle');
+      const body = document.getElementById('lightboxBody');
+      const catColor = getCategoryColor(t.category);
+
+      title.textContent = t.project_title;
+
+      body.innerHTML = `
+        <div class="lightbox-images">
+          <div class="lightbox-img-item" onclick="openFullImg('${t.transfer_proof_url}')">
+            <img src="${t.transfer_proof_url}" alt="Transfer proof" loading="lazy">
+            <span class="lightbox-img-label">Transfer Proof</span>
+          </div>
+          <div class="lightbox-img-item" onclick="openFullImg('${t.project_proof_url}')">
+            <img src="${t.project_proof_url}" alt="Project proof" loading="lazy">
+            <span class="lightbox-img-label">Project Proof</span>
+          </div>
+          <div class="lightbox-img-item" onclick="openFullImg('${t.chat_screenshot_url}')">
+            <img src="${t.chat_screenshot_url}" alt="Chat screenshot" loading="lazy">
+            <span class="lightbox-img-label">Chat Screenshot</span>
+          </div>
+        </div>
+
+        <div class="lightbox-details">
+          <div class="lightbox-detail-item">
+            <div class="lightbox-detail-label">Customer</div>
+            <div class="lightbox-detail-value">${t.customer_name}</div>
+          </div>
+          <div class="lightbox-detail-item">
+            <div class="lightbox-detail-label">Category</div>
+            <div class="lightbox-detail-value" style="color:${catColor.color}">${t.category}</div>
+          </div>
+          <div class="lightbox-detail-item">
+            <div class="lightbox-detail-label">Price</div>
+            <div class="lightbox-detail-value price">${formatRupiah(t.price)}</div>
+          </div>
+          <div class="lightbox-detail-item">
+            <div class="lightbox-detail-label">Date</div>
+            <div class="lightbox-detail-value">${formatDate(t.transaction_date)}</div>
+          </div>
+        </div>
+
+        ${(t.project_link || t.demo_video_url) ? `
+          <div class="lightbox-links">
+            ${t.project_link ? `<a href="${t.project_link}" target="_blank" rel="noopener" class="lightbox-link-btn project"><i class="fas fa-external-link-alt"></i> View Project</a>` : ''}
+            ${t.demo_video_url ? `<a href="${t.demo_video_url}" target="_blank" rel="noopener" class="lightbox-link-btn video"><i class="fab fa-youtube"></i> Watch Demo</a>` : ''}
+          </div>
+        ` : ''}
+      `;
+
+      overlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+      document.getElementById('lightboxOverlay').classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+    document.getElementById('lightboxOverlay').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeLightbox();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeLightbox();
+        closeFullImg();
+      }
+    });
+
+    // --- FULLSCREEN IMAGE VIEWER ---
+    function openFullImg(url) {
+      const viewer = document.getElementById('lightboxFullImg');
+      document.getElementById('fullImgSrc').src = url;
+      viewer.classList.add('active');
+    }
+
+    function closeFullImg() {
+      document.getElementById('lightboxFullImg').classList.remove('active');
+      document.getElementById('fullImgSrc').src = '';
+    }
+
+    document.getElementById('lightboxFullImg').addEventListener('click', closeFullImg);
+
+    // Load testimonials on DOM ready
+    if (SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
+      loadTestimonials();
+    } else {
+      console.warn('Supabase credentials not configured. Replace YOUR_SUPABASE_URL and YOUR_SUPABASE_ANON_KEY in index.html');
+      document.getElementById('testimonialEmpty').style.display = 'block';
+      document.querySelector('.testimonial-swiper').style.display = 'none';
+    }
     
     // --------------------------------------------------------
     // --- NEW: GITHUB 3D GRAPH VISUALIZATION & FETCH ---

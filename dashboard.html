@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Testimonials Admin</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome 6.4.0 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Dashboard CSS -->
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+  <!-- ═══════════════════ TOAST CONTAINER ═══════════════════ -->
+  <div id="toast-container"></div>
+
+  <!-- ═══════════════════ LOGIN VIEW ═══════════════════ -->
+  <section id="login-view" class="login-view">
+    <div class="login-card">
+      <div class="login-glow"></div>
+      <div class="login-header">
+        <div class="login-icon">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <h1>Admin Dashboard</h1>
+        <p class="text-muted">Sign in to manage testimonials</p>
+      </div>
+      <form id="login-form" autocomplete="off">
+        <div class="form-group">
+          <label for="login-email"><i class="fa-solid fa-envelope"></i> Email</label>
+          <input type="email" id="login-email" placeholder="admin@example.com" required>
+        </div>
+        <div class="form-group">
+          <label for="login-password"><i class="fa-solid fa-lock"></i> Password</label>
+          <div class="password-wrapper">
+            <input type="password" id="login-password" placeholder="••••••••" required>
+            <button type="button" class="toggle-password" aria-label="Toggle password visibility">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" id="login-btn">
+          <span class="btn-text">Sign In</span>
+          <span class="btn-loader" hidden><i class="fa-solid fa-spinner fa-spin"></i></span>
+        </button>
+      </form>
+    </div>
+    <!-- Decorative orbs -->
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+  </section>
+
+  <!-- ═══════════════════ DASHBOARD VIEW ═══════════════════ -->
+  <section id="dashboard-view" class="dashboard-view" hidden>
+
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+      <button class="hamburger" id="hamburger-btn" aria-label="Toggle sidebar">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <h2 class="mobile-title">Dashboard</h2>
+      <div class="mobile-avatar">
+        <i class="fa-solid fa-user-astronaut"></i>
+      </div>
+    </header>
+
+    <!-- Sidebar Overlay (mobile) -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon"><i class="fa-solid fa-terminal"></i></div>
+        <span class="brand-text">Admin<span class="accent">Panel</span></span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-view="form" id="nav-new">
+          <i class="fa-solid fa-plus"></i>
+          <span>New Testimonial</span>
+        </button>
+        <button class="nav-item" data-view="list" id="nav-list">
+          <i class="fa-solid fa-clipboard-list"></i>
+          <span>List All</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar"><i class="fa-solid fa-user-astronaut"></i></div>
+          <div class="user-details">
+            <span class="user-email" id="user-email">admin</span>
+            <span class="user-role">Administrator</span>
+          </div>
+        </div>
+        <button class="nav-item logout-btn" id="logout-btn">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span>Logout</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+      <!-- ═══════ FORM VIEW ═══════ -->
+      <div id="form-view" class="content-panel">
+        <div class="panel-header">
+          <h2 id="form-title"><i class="fa-solid fa-plus-circle"></i> New Testimonial</h2>
+          <button class="btn btn-ghost" id="form-cancel-btn" hidden>
+            <i class="fa-solid fa-xmark"></i> Cancel
+          </button>
+        </div>
+
+        <form id="testimonial-form" class="testimonial-form" autocomplete="off">
+          <input type="hidden" id="edit-id" value="">
+
+          <!-- Row 1 -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="customer_name"><i class="fa-solid fa-user"></i> Customer Name</label>
+              <input type="text" id="customer_name" name="customer_name" placeholder="John Doe" required>
+            </div>
+            <div class="form-group">
+              <label for="project_title"><i class="fa-solid fa-briefcase"></i> Project Title</label>
+              <input type="text" id="project_title" name="project_title" placeholder="E-commerce Website" required>
+            </div>
+          </div>
+
+          <!-- Row 2 -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="category"><i class="fa-solid fa-tags"></i> Category</label>
+              <select id="category" name="category" required>
+                <option value="">Select category…</option>
+                <option value="Web Development">Web Development</option>
+                <option value="Design">Design</option>
+                <option value="IoT">IoT</option>
+                <option value="Data Science">Data Science</option>
+                <option value="Video Editing">Video Editing</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="price"><i class="fa-solid fa-money-bill-wave"></i> Price (Rupiah)</label>
+              <div class="input-prefix">
+                <span class="prefix">Rp</span>
+                <input type="number" id="price" name="price" placeholder="500000" min="0" required>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 3: File Uploads -->
+          <div class="form-row form-row-3">
+            <div class="form-group">
+              <label><i class="fa-solid fa-receipt"></i> Transfer Proof</label>
+              <div class="upload-zone" data-target="transfer_proof">
+                <input type="file" id="file-transfer_proof" accept="image/*" hidden>
+                <div class="upload-placeholder" id="placeholder-transfer_proof">
+                  <i class="fa-solid fa-cloud-arrow-up"></i>
+                  <span>Click to upload</span>
+                </div>
+                <div class="upload-preview" id="preview-transfer_proof" hidden>
+                  <img src="" alt="Transfer proof preview">
+                  <button type="button" class="remove-upload" data-field="transfer_proof"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
+                <div class="upload-progress" id="progress-transfer_proof" hidden>
+                  <div class="progress-bar"><div class="progress-fill"></div></div>
+                  <span class="progress-text">0%</span>
+                </div>
+              </div>
+              <input type="hidden" id="transfer_proof" name="transfer_proof" value="">
+            </div>
+
+            <div class="form-group">
+              <label><i class="fa-solid fa-image"></i> Project Proof</label>
+              <div class="upload-zone" data-target="project_proof">
+                <input type="file" id="file-project_proof" accept="image/*" hidden>
+                <div class="upload-placeholder" id="placeholder-project_proof">
+                  <i class="fa-solid fa-cloud-arrow-up"></i>
+                  <span>Click to upload</span>
+                </div>
+                <div class="upload-preview" id="preview-project_proof" hidden>
+                  <img src="" alt="Project proof preview">
+                  <button type="button" class="remove-upload" data-field="project_proof"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
+                <div class="upload-progress" id="progress-project_proof" hidden>
+                  <div class="progress-bar"><div class="progress-fill"></div></div>
+                  <span class="progress-text">0%</span>
+                </div>
+              </div>
+              <input type="hidden" id="project_proof" name="project_proof" value="">
+            </div>
+
+            <div class="form-group">
+              <label><i class="fa-solid fa-comments"></i> Chat Screenshot</label>
+              <div class="upload-zone" data-target="chat_screenshot">
+                <input type="file" id="file-chat_screenshot" accept="image/*" hidden>
+                <div class="upload-placeholder" id="placeholder-chat_screenshot">
+                  <i class="fa-solid fa-cloud-arrow-up"></i>
+                  <span>Click to upload</span>
+                </div>
+                <div class="upload-preview" id="preview-chat_screenshot" hidden>
+                  <img src="" alt="Chat screenshot preview">
+                  <button type="button" class="remove-upload" data-field="chat_screenshot"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
+                <div class="upload-progress" id="progress-chat_screenshot" hidden>
+                  <div class="progress-bar"><div class="progress-fill"></div></div>
+                  <span class="progress-text">0%</span>
+                </div>
+              </div>
+              <input type="hidden" id="chat_screenshot" name="chat_screenshot" value="">
+            </div>
+          </div>
+
+          <!-- Row 4 -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="project_link"><i class="fa-solid fa-link"></i> Project Link <span class="optional">(optional)</span></label>
+              <input type="url" id="project_link" name="project_link" placeholder="https://example.com">
+            </div>
+            <div class="form-group">
+              <label for="demo_video_url"><i class="fa-brands fa-youtube"></i> Demo Video URL <span class="optional">(optional)</span></label>
+              <input type="url" id="demo_video_url" name="demo_video_url" placeholder="https://youtube.com/watch?v=...">
+            </div>
+          </div>
+
+          <!-- Row 5 -->
+          <div class="form-row form-row-3">
+            <div class="form-group">
+              <label for="proof_type"><i class="fa-solid fa-photo-film"></i> Proof Type</label>
+              <select id="proof_type" name="proof_type" required>
+                <option value="image">Image</option>
+                <option value="video">Video</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="transaction_date"><i class="fa-solid fa-calendar-days"></i> Transaction Date</label>
+              <input type="date" id="transaction_date" name="transaction_date" required>
+            </div>
+            <div class="form-group">
+              <label for="is_visible"><i class="fa-solid fa-eye"></i> Visibility</label>
+              <label class="toggle">
+                <input type="checkbox" id="is_visible" name="is_visible" checked>
+                <span class="toggle-slider"></span>
+                <span class="toggle-label" id="visibility-label">Visible</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Submit -->
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="submit-btn">
+              <i class="fa-solid fa-floppy-disk"></i>
+              <span class="btn-text">Save Testimonial</span>
+              <span class="btn-loader" hidden><i class="fa-solid fa-spinner fa-spin"></i></span>
+            </button>
+            <button type="reset" class="btn btn-ghost" id="reset-btn">
+              <i class="fa-solid fa-rotate-left"></i> Reset
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ═══════ LIST VIEW ═══════ -->
+      <div id="list-view" class="content-panel" hidden>
+        <div class="panel-header">
+          <h2><i class="fa-solid fa-clipboard-list"></i> All Testimonials</h2>
+          <div class="panel-actions">
+            <div class="search-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="search-input" placeholder="Search…">
+            </div>
+            <button class="btn btn-primary btn-sm" id="add-new-btn">
+              <i class="fa-solid fa-plus"></i> Add New
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+          <div class="stat-card">
+            <div class="stat-icon"><i class="fa-solid fa-list-check"></i></div>
+            <div class="stat-info">
+              <span class="stat-value" id="stat-total">0</span>
+              <span class="stat-label">Total</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon visible"><i class="fa-solid fa-eye"></i></div>
+            <div class="stat-info">
+              <span class="stat-value" id="stat-visible">0</span>
+              <span class="stat-label">Visible</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon hidden-stat"><i class="fa-solid fa-eye-slash"></i></div>
+            <div class="stat-info">
+              <span class="stat-value" id="stat-hidden">0</span>
+              <span class="stat-label">Hidden</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon revenue"><i class="fa-solid fa-coins"></i></div>
+            <div class="stat-info">
+              <span class="stat-value" id="stat-revenue">Rp 0</span>
+              <span class="stat-label">Revenue</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Testimonials List -->
+        <div class="testimonials-list" id="testimonials-list">
+          <!-- Loading -->
+          <div class="loading-state" id="list-loading">
+            <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+            <p>Loading testimonials…</p>
+          </div>
+          <!-- Empty State -->
+          <div class="empty-state" id="list-empty" hidden>
+            <i class="fa-solid fa-inbox fa-3x"></i>
+            <h3>No testimonials yet</h3>
+            <p>Create your first testimonial to get started.</p>
+            <button class="btn btn-primary" id="empty-add-btn">
+              <i class="fa-solid fa-plus"></i> Create Testimonial
+            </button>
+          </div>
+          <!-- Cards Container -->
+          <div class="cards-grid" id="cards-grid"></div>
+        </div>
+      </div>
+
+    </main>
+  </section>
+
+  <!-- ═══════════════════ CONFIRM MODAL ═══════════════════ -->
+  <div class="modal-overlay" id="confirm-modal" hidden>
+    <div class="modal-card">
+      <div class="modal-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+      <h3 id="confirm-title">Delete Testimonial?</h3>
+      <p id="confirm-message">This action cannot be undone. Are you sure?</p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="confirm-cancel">Cancel</button>
+        <button class="btn btn-danger" id="confirm-ok">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ IMAGE LIGHTBOX ═══════════════════ -->
+  <div class="lightbox-overlay" id="lightbox" hidden>
+    <button class="lightbox-close" id="lightbox-close"><i class="fa-solid fa-xmark"></i></button>
+    <img src="" alt="Preview" id="lightbox-img">
+  </div>
+
+  <!-- Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Dashboard JS -->
+  <script src="dashboard.js"></script>
+</body>
+</html>

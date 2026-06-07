@@ -9,6 +9,7 @@ Allow: /fonts/
 # Block unnecessary files
 Disallow: /api/
 Disallow: /private/
+Disallow: /dashboard.html
 Disallow: /*.json$
 
 # Sitemap location

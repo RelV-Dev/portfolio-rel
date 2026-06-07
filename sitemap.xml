@@ -5,7 +5,7 @@
   <!-- Homepage -->
   <url>
     <loc>https://relv.biz.id/</loc>
-    <lastmod>2025-01-01</lastmod>
+    <lastmod>2025-06-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.00</priority>
   </url>
@@ -13,7 +13,7 @@
   <!-- About Section -->
   <url>
     <loc>https://relv.biz.id/#home</loc>
-    <lastmod>2025-01-01</lastmod>
+    <lastmod>2025-06-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.90</priority>
   </url>
@@ -21,7 +21,7 @@
   <!-- My Journey (Education) -->
   <url>
     <loc>https://relv.biz.id/#education</loc>
-    <lastmod>2025-01-01</lastmod>
+    <lastmod>2025-06-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
@@ -29,15 +29,23 @@
   <!-- Skills Section -->
   <url>
     <loc>https://relv.biz.id/#skills</loc>
-    <lastmod>2025-01-01</lastmod>
+    <lastmod>2025-06-07</lastmod>
     <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- Freelance Testimonials -->
+  <url>
+    <loc>https://relv.biz.id/#testimonials</loc>
+    <lastmod>2025-06-07</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>0.85</priority>
   </url>
 
   <!-- GitHub 3D Visualization -->
   <url>
     <loc>https://relv.biz.id/#github</loc>
-    <lastmod>2025-01-01</lastmod>
+    <lastmod>2025-06-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.80</priority>
   </url>
@@ -45,7 +53,7 @@
   <!-- Portfolio -->
   <url>
     <loc>https://relv.biz.id/#gallery</loc>
-    <lastmod>2025-01-01</lastmod>
+    <lastmod>2025-06-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.90</priority>
   </url>
