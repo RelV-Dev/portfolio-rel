@@ -4885,7 +4885,7 @@
           oscillator.type = 'triangle';
           oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime);
           oscillator.frequency.exponentialRampToValueAtTime(659.25, audioCtx.currentTime + 0.04);
-          gainNode.gain.setValueAtTime(0.02, audioCtx.currentTime);
+          gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime); // LOUDER
           gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
           oscillator.start();
           oscillator.stop(audioCtx.currentTime + 0.1);
@@ -4898,10 +4898,397 @@
           oscillator.frequency.setValueAtTime(finalFreq, audioCtx.currentTime);
           oscillator.frequency.exponentialRampToValueAtTime(finalFreq * 1.3, audioCtx.currentTime + 0.06);
           
-          gainNode.gain.setValueAtTime(0.03, audioCtx.currentTime);
+          gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime); // LOUDER
           gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
           oscillator.start();
           oscillator.stop(audioCtx.currentTime + 0.12);
+        }
+      }
+
+      function playBuildUpSound() {
+        if (audioCtx.state === 'suspended') return;
+        
+        // Sweeping Oscillator (low to high synth sweep)
+        const osc = audioCtx.createOscillator();
+        const filter = audioCtx.createBiquadFilter();
+        const gainNode = audioCtx.createGain();
+        
+        osc.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(700, audioCtx.currentTime + 0.8);
+        
+        // High-resonance low-pass filter sweep for portal whoosh
+        filter.type = 'lowpass';
+        filter.Q.setValueAtTime(8, audioCtx.currentTime);
+        filter.frequency.setValueAtTime(300, audioCtx.currentTime);
+        filter.frequency.exponentialRampToValueAtTime(2000, audioCtx.currentTime + 0.8);
+        
+        // Smooth volume envelope
+        gainNode.gain.setValueAtTime(0.001, audioCtx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.12, audioCtx.currentTime + 0.15);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.85);
+        
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.9);
+      }
+
+      function createAstronaut() {
+        const astronaut = new THREE.Group();
+        
+        // 1. Torso/Body (White Box)
+        const bodyGeo = new THREE.BoxGeometry(0.8, 1.0, 0.5);
+        const bodyMat = new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          roughness: 0.3,
+          metalness: 0.1
+        });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.castShadow = true;
+        body.receiveShadow = true;
+        astronaut.add(body);
+        
+        // Chestplate Decal Text: "RELV-DEV" on front chest
+        const canvas = document.createElement('canvas');
+        canvas.width = 128;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#0a0a0f';
+        ctx.fillRect(0, 0, 128, 64);
+        ctx.fillStyle = '#00f3ff';
+        ctx.font = 'bold 24px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = '#00f3ff';
+        ctx.shadowBlur = 8;
+        ctx.fillText('RELV-DEV', 64, 32);
+        
+        const tagTexture = new THREE.CanvasTexture(canvas);
+        const tagMat = new THREE.MeshBasicMaterial({ map: tagTexture });
+        const tagGeo = new THREE.PlaneGeometry(0.6, 0.3);
+        const tagMesh = new THREE.Mesh(tagGeo, tagMat);
+        tagMesh.position.set(0, 0.15, 0.26);
+        astronaut.add(tagMesh);
+        
+        // Control panel box on chest
+        const panelGeo = new THREE.BoxGeometry(0.4, 0.3, 0.1);
+        const panelMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+        const panel = new THREE.Mesh(panelGeo, panelMat);
+        panel.position.set(0, -0.2, 0.27);
+        astronaut.add(panel);
+        
+        // Tiny glowing buttons on panel
+        const btnGeo = new THREE.BoxGeometry(0.08, 0.08, 0.05);
+        const btnRedMat = new THREE.MeshBasicMaterial({ color: 0xff0055 });
+        const btnGreenMat = new THREE.MeshBasicMaterial({ color: 0x00ff66 });
+        
+        const btn1 = new THREE.Mesh(btnGeo, btnRedMat);
+        btn1.position.set(-0.1, 0, 0.05);
+        panel.add(btn1);
+        
+        const btn2 = new THREE.Mesh(btnGeo, btnGreenMat);
+        btn2.position.set(0.1, 0, 0.05);
+        panel.add(btn2);
+        
+        // 2. Helmet
+        const helmetGeo = new THREE.SphereGeometry(0.45, 16, 16);
+        const helmetMat = new THREE.MeshStandardMaterial({
+          color: 0xdddddd,
+          roughness: 0.2,
+          metalness: 0.1
+        });
+        const helmet = new THREE.Mesh(helmetGeo, helmetMat);
+        helmet.position.y = 0.85;
+        astronaut.add(helmet);
+        
+        // Visor (dark shiny cyan glass)
+        const visorGeo = new THREE.SphereGeometry(0.38, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+        visorGeo.rotateX(Math.PI / 2);
+        const visorMat = new THREE.MeshStandardMaterial({
+          color: 0x00f3ff,
+          emissive: 0x00f3ff,
+          emissiveIntensity: 0.4,
+          roughness: 0.05,
+          metalness: 0.9,
+          transparent: true,
+          opacity: 0.95
+        });
+        const visor = new THREE.Mesh(visorGeo, visorMat);
+        visor.position.set(0, 0.85, 0.12);
+        visor.scale.set(1, 0.8, 1.1);
+        astronaut.add(visor);
+        
+        // Antenna
+        const antennaPoleGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.3);
+        const antennaPoleMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa });
+        const antennaPole = new THREE.Mesh(antennaPoleGeo, antennaPoleMat);
+        antennaPole.position.set(0, 1.35, 0);
+        astronaut.add(antennaPole);
+        
+        const antennaTipGeo = new THREE.SphereGeometry(0.06, 8, 8);
+        const antennaTipMat = new THREE.MeshBasicMaterial({ color: 0xff0055 });
+        const antennaTip = new THREE.Mesh(antennaTipGeo, antennaTipMat);
+        antennaTip.position.set(0, 1.5, 0);
+        astronaut.add(antennaTip);
+        
+        // 3. Arms & Hands
+        const armGeo = new THREE.CylinderGeometry(0.12, 0.1, 0.5, 8);
+        armGeo.translate(0, -0.25, 0);
+        
+        // Left Arm
+        const leftArm = new THREE.Mesh(armGeo, bodyMat);
+        leftArm.position.set(-0.5, 0.3, 0);
+        leftArm.rotation.z = Math.PI / 6;
+        astronaut.add(leftArm);
+        
+        // Right Arm
+        const rightArm = new THREE.Mesh(armGeo, bodyMat);
+        rightArm.position.set(0.5, 0.3, 0);
+        rightArm.rotation.z = -Math.PI / 6;
+        astronaut.add(rightArm);
+        
+        // Joint details (cyan bands)
+        const bandGeo = new THREE.CylinderGeometry(0.14, 0.14, 0.08, 8);
+        const bandMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff });
+        
+        const lShoulderBand = new THREE.Mesh(bandGeo, bandMat);
+        lShoulderBand.position.set(-0.45, 0.35, 0);
+        lShoulderBand.rotation.z = Math.PI / 6;
+        astronaut.add(lShoulderBand);
+        
+        const rShoulderBand = new THREE.Mesh(bandGeo, bandMat);
+        rShoulderBand.position.set(0.45, 0.35, 0);
+        rShoulderBand.rotation.z = -Math.PI / 6;
+        astronaut.add(rShoulderBand);
+        
+        // 4. Legs & Boots
+        const legGeo = new THREE.CylinderGeometry(0.14, 0.12, 0.6, 8);
+        legGeo.translate(0, -0.3, 0);
+        
+        // Left Leg
+        const leftLeg = new THREE.Mesh(legGeo, bodyMat);
+        leftLeg.position.set(-0.25, -0.5, 0);
+        astronaut.add(leftLeg);
+        
+        // Right Leg
+        const rightLeg = new THREE.Mesh(legGeo, bodyMat);
+        rightLeg.position.set(0.25, -0.5, 0);
+        astronaut.add(rightLeg);
+        
+        // Boots
+        const bootGeo = new THREE.BoxGeometry(0.18, 0.15, 0.3);
+        const bootMat = new THREE.MeshStandardMaterial({ color: 0xbc13fe, roughness: 0.5 });
+        
+        const leftBoot = new THREE.Mesh(bootGeo, bootMat);
+        leftBoot.position.set(-0.25, -0.85, 0.05);
+        astronaut.add(leftBoot);
+        
+        const rightBoot = new THREE.Mesh(bootGeo, bootMat);
+        rightBoot.position.set(0.25, -0.85, 0.05);
+        astronaut.add(rightBoot);
+        
+        // Knee bands (purple cuffs)
+        const kneeBandGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.08, 8);
+        const kneeBandMat = new THREE.MeshBasicMaterial({ color: 0xbc13fe });
+        
+        const lKnee = new THREE.Mesh(kneeBandGeo, kneeBandMat);
+        lKnee.position.set(-0.25, -0.5, 0.02);
+        astronaut.add(lKnee);
+        
+        const rKnee = new THREE.Mesh(kneeBandGeo, kneeBandMat);
+        rKnee.position.set(0.25, -0.5, 0.02);
+        astronaut.add(rKnee);
+        
+        // 5. Jetpack (Backpack)
+        const packGeo = new THREE.BoxGeometry(0.6, 0.8, 0.3);
+        const packMat = new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.6, roughness: 0.3 });
+        const pack = new THREE.Mesh(packGeo, packMat);
+        pack.position.set(0, 0, -0.38);
+        astronaut.add(pack);
+        
+        // Jetpack Thruster Tubes (L & R)
+        const tubeGeo = new THREE.CylinderGeometry(0.1, 0.08, 0.4, 8);
+        const tubeMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.2 });
+        
+        const leftTube = new THREE.Mesh(tubeGeo, tubeMat);
+        leftTube.position.set(-0.2, -0.4, -0.05);
+        pack.add(leftTube);
+        
+        const rightTube = new THREE.Mesh(tubeGeo, tubeMat);
+        rightTube.position.set(0.2, -0.4, -0.05);
+        pack.add(rightTube);
+        
+        // Jetpack dynamic flames (orange cones)
+        const flameGeo = new THREE.ConeGeometry(0.08, 0.4, 8);
+        flameGeo.translate(0, -0.2, 0);
+        const flameMat = new THREE.MeshBasicMaterial({
+          color: 0xffaa00,
+          transparent: true,
+          opacity: 0.95
+        });
+        
+        const leftFlame = new THREE.Mesh(flameGeo, flameMat);
+        leftFlame.position.set(0, -0.2, 0);
+        leftTube.add(leftFlame);
+        
+        const rightFlame = new THREE.Mesh(flameGeo, flameMat);
+        rightFlame.position.set(0, -0.2, 0);
+        rightTube.add(rightFlame);
+        
+        // Save references in userData
+        astronaut.userData = {
+          leftFlame: leftFlame,
+          rightFlame: rightFlame,
+          rightArm: rightArm,
+          leftArm: leftArm,
+          body: body,
+          isDoingRoll: false,
+          rollProgress: 0,
+          isWaving: false,
+          waveProgress: 0,
+          isTeleporting: false,
+          teleportProgress: 0,
+          speed: 0.25, // orbital speed
+          orbitRadiusX: 28,
+          orbitRadiusZ: 14,
+          targetY: 4
+        };
+        
+        // Set children userData to tag them as parts of the astronaut
+        const parts = [body, helmet, visor, panel, pack, leftBoot, rightBoot];
+        parts.forEach(p => {
+          p.userData = { isAstronaut: true, parentGroup: astronaut };
+        });
+        
+        return astronaut;
+      }
+
+      function playAstroSound(type) {
+        if (audioCtx.state === 'suspended') return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        if (type === 'boost') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(80, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.3);
+          gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.5);
+        } else if (type === 'greeting') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+          osc.frequency.setValueAtTime(880.00, audioCtx.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.3);
+        } else if (type === 'teleport') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.25);
+          gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.3);
+        }
+      }
+
+      let activeAstroSprite = null;
+      let astroSpriteTimeout = null;
+      
+      function createAstroBubble(text) {
+        if (activeAstroSprite) {
+          scene.remove(activeAstroSprite);
+          activeAstroSprite = null;
+        }
+        if (astroSpriteTimeout) {
+          clearTimeout(astroSpriteTimeout);
+        }
+        
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 512;
+        canvas.height = 128;
+        
+        ctx.fillStyle = 'rgba(5, 5, 12, 0.9)';
+        ctx.strokeStyle = '#00f3ff';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.roundRect(10, 10, 492, 108, 20);
+        ctx.fill();
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(246, 118);
+        ctx.lineTo(266, 118);
+        ctx.lineTo(256, 128);
+        ctx.closePath();
+        ctx.fillStyle = '#00f3ff';
+        ctx.fill();
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 26px "Space Grotesk", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = '#00f3ff';
+        ctx.shadowBlur = 10;
+        ctx.fillText(text, 256, 64);
+        
+        const texture = new THREE.CanvasTexture(canvas);
+        const mat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+        const sprite = new THREE.Sprite(mat);
+        sprite.scale.set(3.5, 0.875, 1);
+        
+        return sprite;
+      }
+
+      function triggerAstronautInteraction(astro) {
+        if (astro.userData.isDoingRoll || astro.userData.isWaving || astro.userData.isTeleporting) return;
+        
+        const choice = Math.floor(Math.random() * 4) + 1;
+        
+        if (choice === 1) {
+          astro.userData.isDoingRoll = true;
+          astro.userData.rollProgress = 0;
+          playAstroSound('boost');
+        } else if (choice === 2) {
+          const messages = [
+            "Hello Human! 🚀",
+            "RELV-DEV Systems: Online!",
+            "Zero-G Coding level: 100%",
+            "Analyzing contribution matrix... Secure.",
+            "Coffee supply: 0% | Code: 99%",
+            "Entering hyperdrive in 3... 2... 1..."
+          ];
+          const msg = messages[Math.floor(Math.random() * messages.length)];
+          const bubble = createAstroBubble(msg);
+          bubble.position.copy(astro.position);
+          bubble.position.y += 2.2;
+          scene.add(bubble);
+          activeAstroSprite = bubble;
+          playAstroSound('greeting');
+          
+          astroSpriteTimeout = setTimeout(() => {
+            if (activeAstroSprite === bubble) {
+              scene.remove(bubble);
+              activeAstroSprite = null;
+            }
+          }, 3000);
+        } else if (choice === 3) {
+          astro.userData.isWaving = true;
+          astro.userData.waveProgress = 0;
+          playAstroSound('greeting');
+        } else if (choice === 4) {
+          astro.userData.isTeleporting = true;
+          astro.userData.teleportProgress = 0;
+          playAstroSound('teleport');
         }
       }
       
@@ -5034,6 +5421,10 @@
       orbitLinesGroup.add(createOrbitRing(22, 0x00f3ff)); // Cyan Ocean Orbit
       orbitLinesGroup.add(createOrbitRing(14, 0xffaa00)); // Gold Core Orbit
       scene.add(orbitLinesGroup);
+      
+      // --- NEW: Add Astronaut ---
+      const astronaut = createAstronaut();
+      scene.add(astronaut);
       
       // Define orbiting array for animation loop update
       const orbitingPlanets = [
@@ -5271,6 +5662,26 @@
         updatePointer(touch.clientX, touch.clientY);
       }, { passive: false });
       
+      container.addEventListener('click', (e) => {
+        updatePointer(e.clientX, e.clientY);
+        
+        // Raycast
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(scene.children, true);
+        
+        let astronautClicked = null;
+        for (let i = 0; i < intersects.length; i++) {
+          if (intersects[i].object.userData && intersects[i].object.userData.isAstronaut) {
+            astronautClicked = intersects[i].object.userData.parentGroup;
+            break;
+          }
+        }
+        
+        if (astronautClicked) {
+          triggerAstronautInteraction(astronautClicked);
+        }
+      });
+      
       window.addEventListener('resize', () => {
         if (!container) return;
         const newWidth = container.offsetWidth;
@@ -5288,6 +5699,7 @@
         entries.forEach(entry => {
           if (entry.isIntersecting) {
             startAnimation = true;
+            playBuildUpSound();
             observer.disconnect();
           }
         });
@@ -5426,6 +5838,101 @@
           p.group.position.z = Math.sin(time * p.speed) * p.radius;
           p.group.rotation.y += p.rotY;
         });
+        
+        // --- NEW: Update Astronaut Orbit & Interactions ---
+        if (astronaut) {
+          // 1. Roll / Flip State
+          if (astronaut.userData.isDoingRoll) {
+            astronaut.userData.rollProgress += 0.04;
+            astronaut.rotation.x = astronaut.userData.rollProgress * Math.PI * 2;
+            
+            // scale up flames during spin
+            const pulseScale = 1.0 + Math.sin(astronaut.userData.rollProgress * Math.PI) * 2.5;
+            astronaut.userData.leftFlame.scale.set(1, pulseScale, 1);
+            astronaut.userData.rightFlame.scale.set(1, pulseScale, 1);
+            
+            if (astronaut.userData.rollProgress >= 1) {
+              astronaut.userData.isDoingRoll = false;
+              astronaut.rotation.x = 0;
+              astronaut.userData.leftFlame.scale.set(1, 1, 1);
+              astronaut.userData.rightFlame.scale.set(1, 1, 1);
+            }
+          }
+          
+          // 2. Waving State
+          if (astronaut.userData.isWaving) {
+            astronaut.userData.waveProgress += 0.1;
+            astronaut.userData.rightArm.rotation.z = -Math.PI / 6 - Math.sin(astronaut.userData.waveProgress * 3) * 0.8;
+            if (astronaut.userData.waveProgress >= Math.PI * 2) {
+              astronaut.userData.isWaving = false;
+              astronaut.userData.rightArm.rotation.z = -Math.PI / 6;
+            }
+          }
+          
+          // 3. Teleport State
+          if (astronaut.userData.isTeleporting) {
+            astronaut.userData.teleportProgress += 0.08;
+            if (astronaut.userData.teleportProgress < 0.5) {
+              const s = 1 - (astronaut.userData.teleportProgress * 2);
+              astronaut.scale.set(s, s, s);
+            } else {
+              if (astronaut.scale.x === 0) {
+                // Shift phase by 180 deg
+                time += Math.PI / astronaut.userData.speed;
+              }
+              const s = (astronaut.userData.teleportProgress - 0.5) * 2;
+              astronaut.scale.set(s, s, s);
+            }
+            if (astronaut.userData.teleportProgress >= 1.0) {
+              astronaut.userData.isTeleporting = false;
+              astronaut.scale.set(1, 1, 1);
+            }
+          }
+          
+          // 4. Thruster Flame Pulsation
+          if (!astronaut.userData.isDoingRoll) {
+            const flickerL = 0.8 + Math.random() * 0.4;
+            const flickerR = 0.8 + Math.random() * 0.4;
+            astronaut.userData.leftFlame.scale.set(1, flickerL, 1);
+            astronaut.userData.rightFlame.scale.set(1, flickerR, 1);
+          }
+          
+          // 5. Zero-G Drifting Orbit
+          const orbitAngle = time * astronaut.userData.speed;
+          const targetX = Math.cos(orbitAngle) * astronaut.userData.orbitRadiusX;
+          const targetZ = Math.sin(orbitAngle) * astronaut.userData.orbitRadiusZ;
+          const targetY = astronaut.userData.targetY + Math.sin(time * 1.5) * 1.2;
+          
+          // Set position with low frequency noise
+          astronaut.position.x = targetX + Math.sin(time * 0.5) * 1.5;
+          astronaut.position.z = targetZ + Math.cos(time * 0.35) * 1.5;
+          astronaut.position.y = targetY;
+          
+          // Auto-orientation along path
+          const nextAngle = (time + 0.02) * astronaut.userData.speed;
+          const nextX = Math.cos(nextAngle) * astronaut.userData.orbitRadiusX + Math.sin((time + 0.02) * 0.5) * 1.5;
+          const nextZ = Math.sin(nextAngle) * astronaut.userData.orbitRadiusZ + Math.cos((time + 0.02) * 0.35) * 1.5;
+          const nextY = astronaut.userData.targetY + Math.sin((time + 0.02) * 1.5) * 1.2;
+          
+          const forwardVec = new THREE.Vector3(
+            nextX - astronaut.position.x,
+            nextY - astronaut.position.y,
+            nextZ - astronaut.position.z
+          ).normalize();
+          
+          const targetLook = new THREE.Vector3().copy(astronaut.position).add(forwardVec);
+          astronaut.lookAt(targetLook);
+          
+          // Tilting/banking into turn
+          const turnCurvature = Math.sin(orbitAngle);
+          astronaut.rotation.z = turnCurvature * 0.25;
+          
+          // Keep text bubble above astronaut
+          if (activeAstroSprite) {
+            activeAstroSprite.position.copy(astronaut.position);
+            activeAstroSprite.position.y += 2.2;
+          }
+        }
         
         // Language Floating (Hanya sumbu Y karena Z dikunci user)
         interactiveGroup.children.forEach(child => {
