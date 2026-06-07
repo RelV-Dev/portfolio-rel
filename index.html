@@ -221,7 +221,7 @@
   
   <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet">
 
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
@@ -2499,11 +2499,24 @@
       pointer-events: none;
     }
 
-    .testimonial-swiper {
+    .testimonials-grid-container {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 20px 0 60px;
-      overflow: visible;
+      padding: 20px 0 40px;
+    }
+
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    @media (max-width: 992px) {
+      .testimonials-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
     }
 
     .testimonial-card {
@@ -2513,15 +2526,49 @@
       border: 1px solid var(--glass-border);
       border-radius: 24px;
       overflow: hidden;
-      transition: all 0.4s ease;
       display: flex;
       flex-direction: column;
-      height: auto;
+      height: 100%;
+      position: relative;
+      opacity: 0;
+      animation: cardFadeSlideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      transition: border-color 0.4s ease, box-shadow 0.4s ease, transform 0.2s ease;
+      transform-style: preserve-3d;
+      --mouse-x: 0px;
+      --mouse-y: 0px;
+    }
+
+    @keyframes cardFadeSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+        filter: blur(4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+      }
+    }
+
+    .testimonial-card::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      background: radial-gradient(400px circle at var(--mouse-x) var(--mouse-y), rgba(188, 19, 254, 0.35), transparent 55%);
+      border-radius: inherit;
+      z-index: -1;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      pointer-events: none;
+    }
+
+    .testimonial-card:hover::before {
+      opacity: 1;
     }
 
     .testimonial-card:hover {
       border-color: rgba(188, 19, 254, 0.4);
-      transform: translateY(-5px);
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
     }
 
@@ -2636,47 +2683,53 @@
       box-shadow: 0 5px 20px rgba(188, 19, 254, 0.4);
     }
 
-    /* Swiper custom styling */
-    .testimonial-swiper .swiper-pagination-bullet {
-      background: var(--text-muted);
-      opacity: 0.5;
-      width: 10px;
-      height: 10px;
-      transition: all 0.3s ease;
+    .testimonials-pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin-top: 20px;
     }
 
-    .testimonial-swiper .swiper-pagination-bullet-active {
-      background: var(--secondary);
-      opacity: 1;
-      width: 28px;
-      border-radius: 5px;
-      box-shadow: 0 0 10px var(--secondary);
-    }
-
-    .testimonial-swiper .swiper-button-prev,
-    .testimonial-swiper .swiper-button-next {
-      color: var(--secondary);
+    .testimonials-pagination button {
       background: rgba(20, 20, 25, 0.6);
       backdrop-filter: blur(10px);
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
+      -webkit-backdrop-filter: blur(10px);
       border: 1px solid var(--glass-border);
-      transition: all 0.3s ease;
+      color: var(--text-muted);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .testimonial-swiper .swiper-button-prev::after,
-    .testimonial-swiper .swiper-button-next::after {
-      font-size: 1rem;
-      font-weight: bold;
+    .testimonials-pagination button:hover {
+      background: rgba(188, 19, 254, 0.15);
+      color: var(--secondary);
+      border-color: rgba(188, 19, 254, 0.4);
+      box-shadow: 0 0 15px rgba(188, 19, 254, 0.3);
+      transform: translateY(-2px);
     }
 
-    .testimonial-swiper .swiper-button-prev:hover,
-    .testimonial-swiper .swiper-button-next:hover {
+    .testimonials-pagination button.active {
       background: var(--secondary);
       color: #fff;
       border-color: transparent;
-      box-shadow: 0 0 20px rgba(188, 19, 254, 0.4);
+      box-shadow: 0 0 20px rgba(188, 19, 254, 0.5);
+    }
+
+    .testimonials-pagination button:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+      background: rgba(20, 20, 25, 0.2);
     }
 
     .testimonial-empty {
@@ -2949,10 +3002,6 @@
         padding: 20px;
       }
 
-      .testimonial-swiper .swiper-button-prev,
-      .testimonial-swiper .swiper-button-next {
-        display: none;
-      }
     }
 
     /* Hide cursor elements on touch devices */
@@ -3229,13 +3278,13 @@
       <h2 class="section-title">Freelance Testimonials</h2>
     </div>
 
-    <div class="swiper testimonial-swiper" data-aos="fade-up">
-      <div class="swiper-wrapper" id="testimonialSlides">
-        <!-- Slides will be injected by JS from Supabase -->
+    <div class="testimonials-grid-container" data-aos="fade-up">
+      <div class="testimonials-grid" id="testimonialGrid">
+        <!-- Injected dynamically by JS -->
       </div>
-      <div class="swiper-pagination"></div>
-      <div class="swiper-button-prev"></div>
-      <div class="swiper-button-next"></div>
+      <div class="testimonials-pagination" id="testimonialPagination">
+        <!-- Injected dynamically by JS -->
+      </div>
     </div>
 
     <div class="testimonial-empty" id="testimonialEmpty" style="display:none;">
@@ -3712,7 +3761,7 @@
     </div>
   </footer>
   
-  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
   <script>
     // Init AOS with custom settings
@@ -4312,11 +4361,13 @@
     // Initial render
     showPage();
 
-    // --- TESTIMONIALS: Supabase + Swiper ---
+    // --- TESTIMONIALS: Supabase + Paginated Grid ---
     const SUPABASE_URL = 'https://srkisngeashoaeiwazcr.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNya2lzbmdlYXNob2FlaXdhemNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MjM4NDcsImV4cCI6MjA5NjM5OTg0N30.85xq9c1lbpPrNOBSm8pSZNqwdv2pTh-MWgJtFunC6wI';
 
-    let testimonialSwiper = null;
+    let allTestimonials = [];
+    let currentTestimonialPage = 1;
+    const TESTIMONIALS_PER_PAGE = 3;
 
     function formatRupiah(num) {
       return 'Rp ' + num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
@@ -4349,67 +4400,151 @@
 
         if (error) throw error;
 
-        const slidesContainer = document.getElementById('testimonialSlides');
+        allTestimonials = data || [];
         const emptyState = document.getElementById('testimonialEmpty');
+        const gridContainer = document.querySelector('.testimonials-grid-container');
 
-        if (!data || data.length === 0) {
-          emptyState.style.display = 'block';
-          document.querySelector('.testimonial-swiper').style.display = 'none';
+        if (allTestimonials.length === 0) {
+          if (emptyState) emptyState.style.display = 'block';
+          if (gridContainer) gridContainer.style.display = 'none';
           return;
         }
 
-        slidesContainer.innerHTML = data.map(t => {
-          const catColor = getCategoryColor(t.category);
-          return `
-            <div class="swiper-slide">
-              <div class="testimonial-card" data-testimonial='${JSON.stringify(t).replace(/'/g, "&#39;")}'>
-                <div class="testimonial-img-wrapper">
-                  <img src="${t.project_proof}" alt="${t.project_title} - Project proof" loading="lazy">
-                  <div class="testimonial-img-overlay">
-                    <span class="testimonial-category-badge" style="background:${catColor.bg};color:${catColor.color};border-color:${catColor.border}">${t.category}</span>
-                  </div>
-                </div>
-                <div class="testimonial-card-body">
-                  <span class="testimonial-customer"><i class="fas fa-user"></i> ${t.customer_name}</span>
-                  <h3 class="testimonial-title">${t.project_title}</h3>
-                  <div class="testimonial-meta">
-                    <span class="testimonial-price">${formatRupiah(t.price)}</span>
-                    <span class="testimonial-date"><i class="far fa-calendar"></i> ${formatDate(t.transaction_date)}</span>
-                  </div>
-                  <button class="testimonial-view-btn" onclick="openLightbox(this.closest('.testimonial-card'))">
-                    <i class="fas fa-eye"></i> View Details
-                  </button>
-                </div>
-              </div>
-            </div>
-          `;
-        }).join('');
+        if (emptyState) emptyState.style.display = 'none';
+        if (gridContainer) gridContainer.style.display = 'block';
 
-        // Initialize Swiper
-        testimonialSwiper = new Swiper('.testimonial-swiper', {
-          slidesPerView: 1,
-          spaceBetween: 24,
-          loop: data.length > 3,
-          pagination: {
-            el: '.testimonial-swiper .swiper-pagination',
-            clickable: true,
-          },
-          navigation: {
-            nextEl: '.testimonial-swiper .swiper-button-next',
-            prevEl: '.testimonial-swiper .swiper-button-prev',
-          },
-          breakpoints: {
-            640: { slidesPerView: 2 },
-            1024: { slidesPerView: 3 },
-          },
-        });
-
+        currentTestimonialPage = 1;
+        renderTestimonialPage(currentTestimonialPage);
       } catch (err) {
         console.warn('Testimonials load failed:', err.message);
-        document.getElementById('testimonialEmpty').style.display = 'block';
-        document.querySelector('.testimonial-swiper').style.display = 'none';
+        const emptyState = document.getElementById('testimonialEmpty');
+        const gridContainer = document.querySelector('.testimonials-grid-container');
+        if (emptyState) emptyState.style.display = 'block';
+        if (gridContainer) gridContainer.style.display = 'none';
       }
     }
+
+    function renderTestimonialPage(pageNumber) {
+      const grid = document.getElementById('testimonialGrid');
+      if (!grid) return;
+
+      grid.innerHTML = '';
+      const startIdx = (pageNumber - 1) * TESTIMONIALS_PER_PAGE;
+      const endIdx = startIdx + TESTIMONIALS_PER_PAGE;
+      const pageData = allTestimonials.slice(startIdx, endIdx);
+
+      pageData.forEach((t, index) => {
+        const catColor = getCategoryColor(t.category);
+        const card = document.createElement('div');
+        card.className = 'testimonial-card';
+        card.setAttribute('data-testimonial', JSON.stringify(t).replace(/'/g, "&#39;"));
+        card.style.animationDelay = `${index * 0.1}s`;
+
+        card.innerHTML = `
+          <div class="testimonial-img-wrapper">
+            <img src="${t.project_proof}" alt="${t.project_title} - Project proof" loading="lazy">
+            <div class="testimonial-img-overlay">
+              <span class="testimonial-category-badge" style="background:${catColor.bg};color:${catColor.color};border-color:${catColor.border}">${t.category}</span>
+            </div>
+          </div>
+          <div class="testimonial-card-body">
+            <span class="testimonial-customer"><i class="fas fa-user"></i> ${t.customer_name}</span>
+            <h3 class="testimonial-title">${t.project_title}</h3>
+            <div class="testimonial-meta">
+              <span class="testimonial-price">${formatRupiah(t.price)}</span>
+              <span class="testimonial-date"><i class="far fa-calendar"></i> ${formatDate(t.transaction_date)}</span>
+            </div>
+            <button class="testimonial-view-btn" onclick="openLightbox(this.closest('.testimonial-card'))">
+              <i class="fas fa-eye"></i> View Details
+            </button>
+          </div>
+        `;
+
+        grid.appendChild(card);
+
+        // Attach interactive 3D Tilt & cursor glow if hover is supported
+        if (window.matchMedia('(hover: hover)').matches) {
+          setupCardInteractions(card);
+        }
+      });
+
+      renderPaginationControls(pageNumber);
+    }
+
+    function setupCardInteractions(card) {
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        card.style.setProperty('--mouse-x', `${x}px`);
+        card.style.setProperty('--mouse-y', `${y}px`);
+
+        const width = rect.width;
+        const height = rect.height;
+        const centerX = width / 2;
+        const centerY = height / 2;
+
+        const rotateX = ((centerY - y) / centerY) * 8; // max 8deg
+        const rotateY = ((x - centerX) / centerX) * 8; // max 8deg
+
+        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+      });
+
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)';
+        card.style.setProperty('--mouse-x', '0px');
+        card.style.setProperty('--mouse-y', '0px');
+      });
+    }
+
+    function renderPaginationControls(currentPage) {
+      const paginationContainer = document.getElementById('testimonialPagination');
+      if (!paginationContainer) return;
+
+      paginationContainer.innerHTML = '';
+      const totalPages = Math.ceil(allTestimonials.length / TESTIMONIALS_PER_PAGE);
+
+      if (totalPages <= 1) return;
+
+      // Prev Button
+      const prevBtn = document.createElement('button');
+      prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+      prevBtn.disabled = currentPage === 1;
+      prevBtn.addEventListener('click', () => {
+        currentTestimonialPage = currentPage - 1;
+        renderTestimonialPage(currentTestimonialPage);
+        document.getElementById('testimonials').scrollIntoView({ behavior: 'smooth' });
+      });
+      paginationContainer.appendChild(prevBtn);
+
+      // Page Numbers
+      for (let i = 1; i <= totalPages; i++) {
+        const pageBtn = document.createElement('button');
+        pageBtn.textContent = i;
+        if (i === currentPage) {
+          pageBtn.classList.add('active');
+        }
+        pageBtn.addEventListener('click', () => {
+          currentTestimonialPage = i;
+          renderTestimonialPage(currentTestimonialPage);
+          document.getElementById('testimonials').scrollIntoView({ behavior: 'smooth' });
+        });
+        paginationContainer.appendChild(pageBtn);
+      }
+
+      // Next Button
+      const nextBtn = document.createElement('button');
+      nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+      nextBtn.disabled = currentPage === totalPages;
+      nextBtn.addEventListener('click', () => {
+        currentTestimonialPage = currentPage + 1;
+        renderTestimonialPage(currentTestimonialPage);
+        document.getElementById('testimonials').scrollIntoView({ behavior: 'smooth' });
+      });
+      paginationContainer.appendChild(nextBtn);
+    }
+
 
     // --- INTERACTIVE JOURNEY MODAL ---
     const JOURNEY_DATA = {
@@ -4605,8 +4740,10 @@
       loadTestimonials();
     } else {
       console.warn('Supabase credentials not configured. Replace YOUR_SUPABASE_URL and YOUR_SUPABASE_ANON_KEY in index.html');
-      document.getElementById('testimonialEmpty').style.display = 'block';
-      document.querySelector('.testimonial-swiper').style.display = 'none';
+      const emptyState = document.getElementById('testimonialEmpty');
+      const gridContainer = document.querySelector('.testimonials-grid-container');
+      if (emptyState) emptyState.style.display = 'block';
+      if (gridContainer) gridContainer.style.display = 'none';
     }
     
     // --------------------------------------------------------
