@@ -880,31 +880,45 @@ function getPlaceholderColor($icon_type) {
     .hero-greeting {
       font-family: var(--font-mono);
       color: var(--primary);
-      font-size: 1.1rem;
-      margin-bottom: 15px;
-      display: block;
-      letter-spacing: 2px;
+      font-size: clamp(0.85rem, 1.6vw, 1.05rem);
+      margin-bottom: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      opacity: 0.95;
+    }
+    .hero-greeting::before{
+      content:'';
+      width: 28px; height: 2px;
+      background: linear-gradient(90deg, var(--primary), transparent);
+      border-radius: 2px;
+      opacity: 0.9;
     }
     
     .hero-text h1 {
-      font-size: clamp(2.2rem, 5vw, 4.5rem);
+      font-size: clamp(2.4rem, 5.2vw, 4.6rem);
       font-weight: 800;
-      line-height: 1.1;
-      margin-bottom: 15px;
-      background: linear-gradient(135deg, #fff 0%, #b0b0b0 100%);
+      line-height: 0.95;
+      margin-bottom: 14px;
+      background: linear-gradient(135deg, #fff 0%, #c9d1e1 55%, #a8adb7 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      letter-spacing: -2px;
+      letter-spacing: -0.035em;
+      text-wrap: balance;
     }
     
     .typing-container {
-      font-size: 2rem;
+      font-size: clamp(1.35rem, 2.2vw, 2rem);
       font-weight: 600;
       color: var(--secondary);
-      margin-bottom: 25px;
+      margin-bottom: 22px;
       min-height: 40px;
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 4px;
     }
 
     .typing-text {
@@ -966,15 +980,18 @@ function getPlaceholderColor($icon_type) {
     }
     
     .hero-description {
-      font-size: 1.1rem;
-      margin-bottom: 35px;
-      max-width: 500px;
-      line-height: 1.7;
+      font-size: clamp(1rem, 1.35vw, 1.08rem);
+      margin-bottom: 32px;
+      max-width: 560px;
+      line-height: 1.75;
+      color: #c9ced8;
+      text-wrap: pretty;
     }
     
     .social-links {
       display: flex;
-      gap: 20px;
+      gap: 14px;
+      flex-wrap: wrap;
     }
     
     .social-btn {
@@ -1024,9 +1041,10 @@ function getPlaceholderColor($icon_type) {
     
     .image-wrapper {
       position: relative;
-      width: 400px;
-      height: 400px;
+      width: min(400px, 78vw);
+      height: min(400px, 78vw);
       z-index: 1;
+      transition: transform 0.7s var(--ease-smooth);
     }
     
     .profile-img {
@@ -1034,17 +1052,19 @@ function getPlaceholderColor($icon_type) {
       height: 100%;
       object-fit: cover;
       border-radius: 30px;
-      mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
-      -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+      mask-image: linear-gradient(to bottom, black 82%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to bottom, black 82%, transparent 100%);
       position: relative;
       z-index: 2;
       transform: rotate(-3deg);
-      transition: transform 0.5s ease;
-      border: 2px solid rgba(255, 255, 255, 0.1);
+      transition: transform 0.6s var(--ease-smooth), filter 0.6s var(--ease-smooth), border-color 0.6s;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: 0 18px 50px rgba(0,0,0,0.45);
     }
     
     .image-wrapper:hover .profile-img {
       transform: rotate(0deg) scale(1.02);
+      border-color: rgba(0,243,255,0.22);
     }
     
     .image-glow {
@@ -1071,14 +1091,16 @@ function getPlaceholderColor($icon_type) {
     }
     
     .section-title {
-      font-size: 3rem;
-      font-weight: 700;
+      font-size: clamp(1.9rem, 3.4vw, 3rem);
+      font-weight: 800;
       display: inline-block;
-      background: linear-gradient(to right, #fff, var(--text-muted));
+      background: linear-gradient(to right, #fff 15%, #c9ced8 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       position: relative;
-      padding-bottom: 15px;
+      padding-bottom: 16px;
+      letter-spacing: -0.02em;
+      text-wrap: balance;
     }
     
     .section-title::after {
@@ -1238,19 +1260,21 @@ function getPlaceholderColor($icon_type) {
     }
     
     .journey-card {
-      background: var(--glass-shine);
-      backdrop-filter: blur(10px);
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
       border: 1px solid var(--glass-border);
       padding: 20px;
-      border-radius: 15px;
+      border-radius: 16px;
       text-align: left;
-      transition: transform 0.3s ease;
+      transition: transform 0.35s var(--ease-smooth), border-color 0.35s var(--ease-smooth), box-shadow 0.35s var(--ease-smooth);
       cursor: pointer;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.24);
     }
-    
     .journey-card:hover {
-      transform: translateY(-10px);
-      border-color: var(--primary);
+      transform: translateY(-6px);
+      border-color: rgba(0,243,255,0.22);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.35), 0 0 20px rgba(0,243,255,0.12);
     }
     
     .journey-card h3 {
@@ -1498,8 +1522,8 @@ function getPlaceholderColor($icon_type) {
     
     .skill-category:hover {
       border-color: rgba(255, 255, 255, 0.1);
-      transform: translateY(-5px);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+      transform: translateY(-6px);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255,255,255,0.04) inset;
     }
     
     .skill-header {
@@ -1535,7 +1559,7 @@ function getPlaceholderColor($icon_type) {
     }
     
     .tech-item:hover {
-      transform: translateY(-5px);
+      transform: translateY(-4px);
     }
     
     .tech-icon-box {
@@ -1611,17 +1635,15 @@ function getPlaceholderColor($icon_type) {
     
     .github-stats-info {
       width: 35%;
-      /* Diperlebar dari 30% */
       min-width: 300px;
-      /* Mencegah teks hancur di layar nanggung */
-      padding: 40px;
+      padding: 36px;
       z-index: 10;
-      background: linear-gradient(90deg, rgba(5, 5, 5, 0.95) 0%, rgba(5, 5, 5, 0.4) 100%);
-      /* Gradient lebih kuat */
+      background: linear-gradient(90deg, rgba(5, 5, 5, 0.96) 0%, rgba(5, 5, 5, 0.55) 65%, transparent 100%);
       height: 100%;
       display: flex;
       flex-direction: column;
       justify-content: center;
+      border-right: 1px solid rgba(255,255,255,0.06);
     }
     
     .github-stats-info h3 {
@@ -1677,23 +1699,23 @@ function getPlaceholderColor($icon_type) {
       z-index: 1;
     }
     
-    @media (max-width: 768px) {
+     @media (max-width: 900px) {
       .github-card-container {
         flex-direction: column;
         height: auto;
       }
-      
       .github-stats-info {
         width: 100%;
         min-width: 0;
-        background: rgba(5, 5, 5, 0.8);
-        padding: 30px;
+        background: rgba(5, 5, 5, 0.86);
+        padding: 28px;
+        border-right: none;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
       }
-      
       #github-3d-canvas {
         position: relative;
         width: 100% !important;
-        height: 350px !important;
+        height: 380px !important;
       }
     }
     
@@ -2248,26 +2270,24 @@ function getPlaceholderColor($icon_type) {
     }
     
     .filter-btn {
-      padding: 10px 30px;
+      padding: 10px 22px;
       background: transparent;
       border: 1px solid var(--glass-border);
       color: var(--text-muted);
-      border-radius: 50px;
-      cursor: none;
+      border-radius: 999px;
+      cursor: pointer;
       font-family: var(--font-main);
       font-weight: 600;
-      transition: all 0.3s ease;
+      transition: all 0.28s var(--ease-smooth);
       position: relative;
       overflow: hidden;
-      backdrop-filter: blur(5px);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
     }
-    
-    .filter-btn.active,
     .filter-btn:hover {
-      color: #000;
-      border-color: transparent;
-      background: var(--primary);
-      box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
+      color: #fff;
+      border-color: var(--glass-border-strong);
+      background: rgba(255,255,255,0.06);
     }
     
     .gallery-grid {
@@ -2330,11 +2350,10 @@ function getPlaceholderColor($icon_type) {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transition: transform 0.5s ease;
+      transition: transform 0.6s var(--ease-smooth);
     }
-    
     .gallery-card:hover .card-img img {
-      transform: scale(1.1);
+      transform: scale(1.06);
     }
     
     .card-overlay {
@@ -2841,19 +2860,19 @@ function getPlaceholderColor($icon_type) {
     }
 
     .testimonial-card {
-      background: rgba(20, 20, 25, 0.6);
+      background: linear-gradient(180deg, rgba(24,24,33,0.82), rgba(16,16,22,0.62));
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       border: 1px solid var(--glass-border);
-      border-radius: 24px;
+      border-radius: 22px;
       overflow: hidden;
       display: flex;
       flex-direction: column;
       height: 100%;
       position: relative;
       opacity: 0;
-      animation: cardFadeSlideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-      transition: border-color 0.4s ease, box-shadow 0.4s ease, transform 0.2s ease;
+      animation: cardFadeSlideIn 0.5s var(--ease-smooth) forwards;
+      transition: border-color 0.35s var(--ease-smooth), box-shadow 0.35s var(--ease-smooth), transform 0.3s var(--ease-smooth);
       transform-style: preserve-3d;
       --mouse-x: 0px;
       --mouse-y: 0px;
@@ -2895,19 +2914,18 @@ function getPlaceholderColor($icon_type) {
 
     .testimonial-img-wrapper {
       position: relative;
-      height: 220px;
+      height: 210px;
       overflow: hidden;
     }
-
     .testimonial-img-wrapper img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transition: transform 0.5s ease;
+      transition: transform 0.6s var(--ease-smooth), filter 0.6s var(--ease-smooth);
     }
-
     .testimonial-card:hover .testimonial-img-wrapper img {
-      transform: scale(1.05);
+      transform: scale(1.04);
+      filter: brightness(1.05);
     }
 
     .testimonial-img-overlay {
@@ -2935,10 +2953,11 @@ function getPlaceholderColor($icon_type) {
     }
 
     .testimonial-card-body {
-      padding: 25px;
+      padding: 20px;
       flex: 1;
       display: flex;
       flex-direction: column;
+      gap: 4px;
     }
 
     .testimonial-customer {
@@ -3325,9 +3344,9 @@ function getPlaceholderColor($icon_type) {
 
     }
 
-    /* Hide cursor elements on touch devices */
-    @media (hover: none) {
-      .cursor-bulb, .cursor-dot {
+    /* Hide cursor elements on touch devices + coarse pointer */
+    @media (hover: none), (pointer: coarse) {
+      .cursor-bulb, .cursor-dot, #cursorCanvas {
         display: none !important;
       }
     }
@@ -3407,24 +3426,24 @@ function getPlaceholderColor($icon_type) {
     }
     
     .guestbook-card {
-      background: rgba(20, 20, 25, 0.4);
-      backdrop-filter: blur(15px);
-      -webkit-backdrop-filter: blur(15px);
+      background: linear-gradient(180deg, rgba(24,24,33,0.7), rgba(16,16,22,0.5));
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border: 1px solid var(--glass-border);
-      border-radius: 16px;
-      padding: 20px;
+      border-radius: 18px;
+      padding: 18px;
       display: flex;
       flex-direction: column;
       gap: 12px;
-      transition: all 0.3s ease;
+      transition: transform 0.32s var(--ease-smooth), border-color 0.32s var(--ease-smooth), box-shadow 0.32s var(--ease-smooth);
       width: 320px;
       flex-shrink: 0;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.22);
     }
-    
     .guestbook-card:hover {
-      border-color: rgba(188, 19, 254, 0.3);
-      transform: translateY(-3px);
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      border-color: rgba(188, 19, 254, 0.28);
+      transform: translateY(-4px);
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.34);
     }
     
     .guestbook-card-header {
@@ -3696,8 +3715,9 @@ function getPlaceholderColor($icon_type) {
       box-shadow: 0 10px 40px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.04) inset !important;
     }
 
-    /* Guestbook marquee — pause halus, tidak lompat */
+    /* Guestbook marquee — pause halus, tidak lompat; pause juga saat keyboard focus */
     .guestbook-container { mask-image: linear-gradient(to right, transparent, black 28px, black calc(100% - 28px), transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 28px, black calc(100% - 28px), transparent); }
+    .guestbook-grid:focus-within { animation-play-state: paused; }
 
     /* Gallery: image skeleton before load */
     .card-img img { background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.07), rgba(255,255,255,0.04)); background-size: 200% 100%; animation: skeletonShimmer 1.8s ease-in-out infinite; }
@@ -3709,10 +3729,11 @@ function getPlaceholderColor($icon_type) {
 
     /* ── RESPONSIVE UPGRADE (mobile/tablet) ── */
     @media (max-width: 768px) {
-      .hero { padding: 96px 5% 56px; min-height: auto; }
+      .hero { padding: 96px 5% 48px; min-height: auto; }
       .hero-text h1 { letter-spacing: -1.2px; }
       .section-title { font-size: clamp(1.7rem, 6vw, 2.2rem); }
-      .section-header { margin-bottom: 42px; }
+      .section-header { margin-bottom: 38px; }
+      .hero-content { gap: 32px; }
       section { padding: 64px 5%; }
       .gallery-grid { gap: 18px; grid-template-columns: 1fr; }
       .testimonials-grid { gap: 16px; }
