@@ -96,6 +96,8 @@ $person_awards = [];
 foreach ($awards as $item) {
     $person_awards[] = $item['title'];
 }
+// Prestasi non-DB (tidak ada di tabel portfolio_gallery) ditambahkan manual
+$person_awards[] = "Google Student Ambassador (Oktober 2026 - Present)";
 if (empty($person_awards)) {
     $person_awards = ["National and International Achievements in Technology"];
 }
@@ -124,8 +126,8 @@ function getPlaceholderColor($icon_type) {
   
   <title>Farel Putra Firmansyah | Student Developer, Tech Achiever & IT Leader</title>
   
-  <meta name="description" content="Official portfolio of Farel Putra Firmansyah, student developer at SMA Negeri 3 Pati with national tech achievements (IEEE Fest, FLS3N Poster, IONIC PENS, KRENOVA, IASC) and leadership roles (Ketua SEA, Ketua KIR).">
-  <meta name="keywords" content="Farel Putra Firmansyah, student developer Indonesia, Farel SMA 3 Pati, IEEE Competition 2025, FLS3N Poster Pati, IONIC PENS 2025, KRENOVA Pati, IASC Informatika, SEA SMAGA, KIR SMAGA, OSIS SMAN 3 Pati, student research club">
+  <meta name="description" content="Official portfolio of Farel Putra Firmansyah — Google Student Ambassador, student developer at SMA Negeri 3 Pati with national tech achievements (IEEE Fest, FLS3N Poster, IONIC PENS, KRENOVA, IASC) and leadership roles (Ketua SEA, Ketua KIR).">
+  <meta name="keywords" content="Farel Putra Firmansyah, Google Student Ambassador, student developer Indonesia, Farel SMA 3 Pati, IEEE Competition 2025, FLS3N Poster Pati, IONIC PENS 2025, KRENOVA Pati, IASC Informatika, SEA SMAGA, KIR SMAGA, OSIS SMAN 3 Pati, student research club">
   <meta name="author" content="Farel Putra Firmansyah">
   <meta name="robots" content="index, follow">
   
@@ -140,7 +142,7 @@ function getPlaceholderColor($icon_type) {
   
   <!-- Open Graph (SEO + Beasiswa) -->
   <meta property="og:title" content="Farel Putra Firmansyah | Student Developer & Technology Achiever">
-  <meta property="og:description" content="Student portfolio highlighting academic journey, national and international technology achievements, projects, certificates, and research-oriented development.">
+  <meta property="og:description" content="Google Student Ambassador & student portfolio highlighting academic journey, national and international technology achievements, projects, certificates, and research-oriented development.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://relv.biz.id">
   <meta property="og:image" content="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841885/x3esj1090dipra4braiq.png">
@@ -221,16 +223,44 @@ function getPlaceholderColor($icon_type) {
             "Internet of Things", "Machine Learning", "Data Science", "Competitive Programming", "Cybersecurity",
             "Visual Design", "Video Editing"
           ],
+          "hasOccupation" => [
+            [
+              "@type" => "Occupation",
+              "name" => "Google Student Ambassador",
+              "occupationLocation" => [
+                "@type" => "Country",
+                "name" => "Indonesia"
+              ],
+              "startDate" => "2026-10",
+              "description" => "Representing Google at Universitas Airlangga"
+            ]
+          ],
           "sameAs" => [
             "https://github.com/RelV-Dev",
             "https://instagram.com/zx_frl"
           ],
           "affiliation" => [
-            "@type" => "EducationalOrganization",
-            "name" => "SMA Negeri 3 Pati"
+            [
+              "@type" => "EducationalOrganization",
+              "name" => "SMA Negeri 3 Pati"
+            ],
+            [
+              "@type" => "CollegeOrUniversity",
+              "name" => "Universitas Airlangga",
+              "description" => "Google Student Ambassador (Okt 2026 - Present)"
+            ]
           ],
           "award" => $person_awards,
           "memberOf" => [
+            [
+              "@type" => "Organization",
+              "name" => "Google Student Ambassador",
+              "description" => "Student Ambassador representing Google at Universitas Airlangga, engaging students with Google's technologies, programs, and initiatives (Okt 2026 - Present)",
+              "parentOrganization" => [
+                "@type" => "CollegeOrUniversity",
+                "name" => "Universitas Airlangga"
+              ]
+            ],
             [
               "@type" => "Organization",
               "name" => "SMAGA English Association (SEA)",
@@ -1466,6 +1496,23 @@ function getPlaceholderColor($icon_type) {
       height: 100%;
       object-fit: cover;
     }
+
+    /* Placeholder untuk bukti yang gambarnya belum di-upload */
+    .journey-modal-gallery-item.cert-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: default;
+      background: linear-gradient(135deg, rgba(5, 5, 5, 0.9), rgba(0, 243, 255, 0.08));
+    }
+
+    .journey-modal-gallery-item.cert-placeholder i {
+      font-size: 2rem;
+      color: var(--primary);
+      filter: drop-shadow(0 0 12px rgba(0, 243, 255, 0.5));
+    }
     
     .journey-modal-gallery-item-title {
       position: absolute;
@@ -2319,7 +2366,7 @@ function getPlaceholderColor($icon_type) {
     }
     
     .gallery-card.anim-in {
-      animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
     }
     
     @keyframes popIn {
@@ -2871,7 +2918,7 @@ function getPlaceholderColor($icon_type) {
       height: 100%;
       position: relative;
       opacity: 0;
-      animation: cardFadeSlideIn 0.5s var(--ease-smooth) forwards;
+      animation: cardFadeSlideIn 0.5s var(--ease-smooth) backwards;
       transition: border-color 0.35s var(--ease-smooth), box-shadow 0.35s var(--ease-smooth), transform 0.3s var(--ease-smooth);
       transform-style: preserve-3d;
       --mouse-x: 0px;
@@ -3727,6 +3774,181 @@ function getPlaceholderColor($icon_type) {
     .text-reveal-anim { color: rgba(255,255,255,0.62); }
     .text-reveal-anim.revealed { color: #c9ced8; }
 
+    /* ── MOTION SYSTEM v2 (elegan & subtle — originalitas tetap) ── */
+
+    /* Staggered entrance: dipakai bila suatu grid diberi .stagger-group.
+       Fill mode 'backwards': setelah selesai style kembali natural supaya
+       :hover transform tetap bekerja. (Gallery & guestbook punya mekanisme
+       entrance sendiri dan sengaja tidak diberi class ini.) */
+    .stagger-group.in-view > * {
+      animation: staggerIn 0.7s var(--ease-smooth) backwards;
+      animation-delay: calc(min(var(--i, 0), 8) * 70ms);
+    }
+    @keyframes staggerIn {
+      from { opacity: 0; transform: translateY(22px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Section title: underline menggambar diri + blur-to-focus saat masuk viewport */
+    .section-title {
+      opacity: 0;
+      transform: translateY(14px);
+      filter: blur(6px);
+      transition:
+        opacity 0.8s var(--ease-smooth),
+        transform 0.8s var(--ease-smooth),
+        filter 0.8s var(--ease-smooth);
+    }
+    .section-title.in-view { opacity: 1; transform: translateY(0); filter: blur(0); }
+    .section-title::after {
+      transform: translateX(-50%) scaleX(0);
+      transform-origin: center;
+      transition: transform 0.9s var(--ease-smooth) 0.25s;
+    }
+    .section-title.in-view::after { transform: translateX(-50%) scaleX(1); }
+
+    /* Skill icon box: tilt halus + glow border saat hover (desktop) */
+    @media (hover: hover) and (pointer: fine) {
+      .tech-icon-box {
+        transition: transform 0.4s var(--ease-spring), box-shadow 0.4s var(--ease-smooth), border-color 0.4s;
+      }
+      .tech-item:hover .tech-icon-box {
+        transform: translateY(-3px) rotate(-2deg);
+        box-shadow: 0 0 14px rgba(0, 243, 255, 0.18);
+      }
+      /* Journey icon: pulsa halus saat item aktif.
+         Glow di-render pseudo-element ::after (opacity-only) agar animasi
+         tetap di compositor — bukan box-shadow (paint tiap frame). */
+      .journey-item .journey-icon::after {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        border-radius: inherit;
+        box-shadow: 0 0 20px rgba(0, 243, 255, 0.4), 0 0 60px rgba(0, 243, 255, 0.15);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.4s var(--ease-smooth);
+      }
+      .journey-item.active .journey-icon::after {
+        animation: journeyIconPulse 2.4s var(--ease-smooth) infinite;
+      }
+      @keyframes journeyIconPulse {
+        0%, 100% { opacity: 0.55; }
+        50% { opacity: 1; }
+      }
+    }
+
+    /* Hover glow konsisten antar card (gallery/testimonial/journey/guestbook) */
+    .guestbook-card:hover {
+      border-color: rgba(188, 19, 254, 0.28);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35), 0 0 18px rgba(188, 19, 254, 0.1);
+    }
+    .journey-card:hover {
+      box-shadow: 0 16px 40px rgba(0,0,0,0.35), 0 0 20px rgba(0,243,255,0.12);
+    }
+
+    /* Hero profile image: parallax tilt halus mengikuti mouse (desktop, JS-driven via CSS vars) */
+    .image-wrapper {
+      transform: perspective(900px)
+        rotateX(calc(var(--tilt-y, 0) * -4deg))
+        rotateY(calc(var(--tilt-x, 0) * 5deg));
+      transition: transform 0.5s var(--ease-smooth);
+      will-change: transform;
+    }
+    /* Glow orbit halus di belakang foto profil */
+    .image-glow::after {
+      content: '';
+      position: absolute;
+      inset: -12%;
+      border-radius: 50%;
+      border: 1px solid transparent;
+      background:
+        linear-gradient(var(--bg-dark), var(--bg-dark)) padding-box,
+        conic-gradient(from calc(var(--orbit-angle, 0deg)), rgba(0,243,255,0.55), transparent 25%, rgba(188,19,254,0.55) 50%, transparent 75%, rgba(0,243,255,0.55)) border-box;
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      opacity: 0.5;
+      animation: orbitSpin 14s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes orbitSpin {
+      to { --orbit-angle: 360deg; }
+    }
+    @property --orbit-angle {
+      syntax: '<angle>';
+      initial-value: 0deg;
+      inherits: false;
+    }
+
+    /* Shimmer gradient pelan pada nama hero */
+    .hero-text h1 {
+      background: linear-gradient(110deg, #fff 25%, #7ee9f2 42%, #d67bff 58%, #fff 75%);
+      background-size: 220% 100%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      animation: h1Shimmer 9s var(--ease-smooth) infinite;
+    }
+    @keyframes h1Shimmer {
+      0%, 100% { background-position: 0% 0; }
+      50% { background-position: 100% 0; }
+    }
+
+    /* Social buttons: glow border berurutan saat hover group */
+    .social-links:hover .social-btn { border-color: rgba(255,255,255,0.14); }
+    .social-links .social-btn:hover { border-color: transparent; }
+
+    /* Lightbox & modal: masuk dengan spring scale */
+    .lightbox-content, .guestbook-modal-content, .journey-modal-panel {
+      transition-timing-function: var(--ease-spring);
+    }
+
+    /* ── GLOBAL REDUCED MOTION: hormati preferensi user di SEMUA animasi ── */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+      .stagger-group > *, .section-title, .text-reveal-anim, .reveal,
+      .journey-item, .testimonial-card, .gallery-card {
+        opacity: 1 !important;
+        transform: none !important;
+        filter: none !important;
+      }
+      .image-glow::after, .cursor-bulb, .cursor-dot, #cursorCanvas,
+      .preloader-particle, .firefly-glow { display: none !important; }
+    }
+
+    /* ── FASE 5: PERFORMA & MOBILE ──
+       backdrop-filter di card non-kritis = repaint mahal di HP.
+       Di ≤768px ganti dengan background solid lebih pekat — kedalaman
+       glass tetap terasa, GPU dibebaskan. Navbar & modal (kritis untuk
+       keterbacaan konten bergerak di belakangnya) tetap blur. */
+    @media (max-width: 768px) {
+      .journey-card,
+      .skill-category,
+      .testimonial-card,
+      .guestbook-card,
+      .chat-window,
+      .chat-input-area,
+      .github-card-container {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+      }
+      .journey-card   { background: linear-gradient(180deg, rgba(30,30,38,0.92), rgba(18,18,24,0.88)); }
+      .skill-category { background: rgba(20, 20, 25, 0.88); }
+      .testimonial-card { background: linear-gradient(180deg, rgba(24,24,33,0.95), rgba(16,16,22,0.9)); }
+      .guestbook-card { background: linear-gradient(180deg, rgba(24,24,33,0.93), rgba(16,16,22,0.88)); }
+      .chat-window,
+      .chat-input-area { background: rgba(16,16,22,0.92); }
+      .github-card-container { background: rgba(20,20,25,0.9); }
+
+      /* will-change dibersihkan setelah entrance selesai (hemat memori layer) */
+      .image-wrapper { will-change: auto; }
+    }
+
     /* ── RESPONSIVE UPGRADE (mobile/tablet) ── */
     @media (max-width: 768px) {
       .hero { padding: 96px 5% 48px; min-height: auto; }
@@ -3808,7 +4030,7 @@ function getPlaceholderColor($icon_type) {
           I'm&nbsp;<span class="typing-text"></span><span class="cursor"></span>
         </div>
         <p class="hero-description text-reveal-anim">
-          High school student and tech enthusiast with achievements in programming, cloud computing, and visual design. Passionate about innovation, leadership, and creating meaningful impact through technology and creativity.
+          High school student and tech enthusiast, selected as a Google Student Ambassador, with achievements in programming, cloud computing, and visual design. Passionate about innovation, leadership, and creating meaningful impact through technology and creativity.
         </p>
         <div class="social-links">
           <a href="https://www.instagram.com/zx_frl" target="_blank" class="social-btn" aria-label="Instagram">
@@ -3852,18 +4074,6 @@ function getPlaceholderColor($icon_type) {
         <div class="journey-items">
           <div class="journey-item">
             <div class="journey-icon">
-              <i class="fas fa-book-open"></i>
-            </div>
-            <div class="journey-card" data-period="sd">
-              <span class="journey-year">2013 - 2018</span>
-              <h3>SD Negeri 02 Gembong</h3>
-              <p class="text-reveal-anim">Foundations of learning and early curiosity in science and technology.</p>
-              <span style="font-size:0.75rem;color:var(--primary);margin-top:10px;display:block;font-family:var(--font-mono);"><i class="fas fa-info-circle"></i> Click for details</span>
-            </div>
-          </div>
-          
-          <div class="journey-item">
-            <div class="journey-icon">
               <i class="fas fa-microchip"></i>
             </div>
             <div class="journey-card" data-period="smp">
@@ -3873,7 +4083,7 @@ function getPlaceholderColor($icon_type) {
               <span style="font-size:0.75rem;color:var(--primary);margin-top:10px;display:block;font-family:var(--font-mono);"><i class="fas fa-info-circle"></i> Click for details</span>
             </div>
           </div>
-          
+
           <div class="journey-item">
             <div class="journey-icon">
               <i class="fas fa-graduation-cap"></i>
@@ -3882,6 +4092,18 @@ function getPlaceholderColor($icon_type) {
               <span class="journey-year">2023 - Present</span>
               <h3>SMA Negeri 3 Pati</h3>
               <p class="text-reveal-anim">IT Coordinator, Head of SEA, and Advanced Developer, actively involved in the Student Research Club (KIR) and academic competitions.</p>
+              <span style="font-size:0.75rem;color:var(--primary);margin-top:10px;display:block;font-family:var(--font-mono);"><i class="fas fa-info-circle"></i> Click for details</span>
+            </div>
+          </div>
+
+          <div class="journey-item">
+            <div class="journey-icon">
+              <i class="fas fa-university"></i>
+            </div>
+            <div class="journey-card" data-period="unair">
+              <span class="journey-year">2026 - Present</span>
+              <h3>Universitas Airlangga</h3>
+              <p class="text-reveal-anim">Google Student Ambassador — representing Google on campus and engaging students with Google's technologies, programs, and initiatives.</p>
               <span style="font-size:0.75rem;color:var(--primary);margin-top:10px;display:block;font-family:var(--font-mono);"><i class="fas fa-info-circle"></i> Click for details</span>
             </div>
           </div>
@@ -4258,13 +4480,27 @@ function getPlaceholderColor($icon_type) {
           </div>
         </div>
       <?php endforeach; ?>
+
+        <!-- Google Student Ambassador (bukan dari DB; gambar menyusul, di-edit manual) -->
+        <div class="gallery-card" data-category="awards">
+          <div class="card-img">
+            <div class="card-img-placeholder" style="height: 220px; background: linear-gradient(135deg, rgba(5, 5, 5, 0.9), rgba(188, 19, 254, 0.1)); display: flex; align-items: center; justify-content: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); position: relative;">
+              <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, rgba(188, 19, 254, 0.1) 0%, transparent 70%); pointer-events: none;"></div>
+              <i class="fab fa-google" style="font-size: 3.5rem; color: var(--secondary); filter: drop-shadow(0 0 15px rgba(188, 19, 254, 0.5));"></i>
+            </div>
+          </div>
+          <div class="card-content">
+            <span class="card-category">Award - 2026</span>
+            <h3>Google Student Ambassador</h3>
+            <p class="text-reveal-anim">Selected as a Google Student Ambassador, representing Google at Universitas Airlangga and engaging students with Google's technologies, programs, and initiatives.</p>
+          </div>
+        </div>
     </div>
 
     <div class="pagination-controls" id="galleryPagination">
       <!-- Pagination buttons injected by JS -->
     </div>
   </section>
-  
   <!-- LIGHTBOX MODAL -->
   <div class="lightbox-overlay" id="lightboxOverlay">
     <div class="lightbox-content">
@@ -4660,8 +4896,9 @@ function getPlaceholderColor($icon_type) {
       window.addEventListener('scroll', onScroll, {passive:true});
       onScroll();
 
-      // Light reveal for gallery/testimonials/skills (AOS tetap, ini tambahan halus)
-      const revealEls = document.querySelectorAll('.gallery-card, .testimonial-card, .skill-category');
+      // Light reveal untuk skill category (testimonial-card & gallery-card
+      // sudah punya entrance animation sendiri — reveal ganda bikin kedip)
+      const revealEls = document.querySelectorAll('.skill-category');
       revealEls.forEach(el=> el.classList.add('reveal'));
       const ro = new IntersectionObserver((entries)=>{
         entries.forEach(e=>{
@@ -4673,14 +4910,49 @@ function getPlaceholderColor($icon_type) {
       }, {threshold: 0.12, rootMargin: '0px 0px -40px 0px'});
       revealEls.forEach(el=> ro.observe(el));
 
+      // Stagger entrance gallery ditangani sendiri oleh showPage() (popIn + delay),
+      // guestbook-grid adalah marquee berjalan — keduanya dikecualikan dari stagger-group.
+      // Observer ini hanya untuk section titles (blur-to-focus + underline self-draw).
+      const titleObserver = new IntersectionObserver((entries)=>{
+        entries.forEach(e=>{
+          if(e.isIntersecting){
+            e.target.classList.add('in-view');
+            titleObserver.unobserve(e.target);
+          }
+        });
+      }, {threshold: 0.4});
+      document.querySelectorAll('.section-title').forEach(t => titleObserver.observe(t));
+
+      // Hero profile image: parallax tilt halus mengikuti mouse (desktop only)
+      const imageWrapper = document.querySelector('.image-wrapper');
+      const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if(imageWrapper && finePointer && !reducedMotion){
+        const hero = document.getElementById('home');
+        hero.addEventListener('mousemove', (e) => {
+          const rect = imageWrapper.getBoundingClientRect();
+          const cx = rect.left + rect.width / 2;
+          const cy = rect.top + rect.height / 2;
+          // Normalisasi -1..1 dari posisi mouse relatif ke tengah foto
+          const nx = Math.max(-1, Math.min(1, (e.clientX - cx) / (rect.width)));
+          const ny = Math.max(-1, Math.min(1, (e.clientY - cy) / (rect.height)));
+          imageWrapper.style.setProperty('--tilt-x', nx.toFixed(3));
+          imageWrapper.style.setProperty('--tilt-y', ny.toFixed(3));
+        }, {passive:true});
+        hero.addEventListener('mouseleave', () => {
+          imageWrapper.style.setProperty('--tilt-x', '0');
+          imageWrapper.style.setProperty('--tilt-y', '0');
+        });
+      }
+
       // Respect reduced motion: kill heavy parallax & cursor if needed
-      if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+      if(reducedMotion){
         document.documentElement.style.setProperty('--hero-parallax','0');
       }
     })();
 
     // --- Typing Animation (Smooth Character-by-Character with CSS) ---
-    const words = ["Tech Enthusiast", "Developer", "Visual Designer"];
+    const words = ["Tech Enthusiast", "Developer", "Visual Designer", "Google Student Ambassador"];
     let wordIndex = 0;
     const typingEl = document.querySelector('.typing-text');
     
@@ -5022,8 +5294,11 @@ function getPlaceholderColor($icon_type) {
       
       requestAnimationFrame(animateCursor);
     }
-    
-    animateCursor();
+
+    // Skip cursor particle loop entirely saat user prefer reduced motion
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      animateCursor();
+    }
     
     const clickableElements = document.querySelectorAll('a, button, .journey-card, .skill-category, .gallery-card, input, textarea');
     
@@ -5114,6 +5389,10 @@ function getPlaceholderColor($icon_type) {
       filtered.forEach((item, index) => {
         if (index >= start && index < end) {
           item.classList.remove('hide');
+          item.classList.remove('anim-in');
+          // Stagger saat masuk: delay berurutan per kartu, reflow agar animasi restart
+          item.style.animationDelay = `${Math.min(index % ITEMS_PER_PAGE, 8) * 60}ms`;
+          void item.offsetWidth;
           item.classList.add('anim-in');
         }
       });
@@ -5703,16 +5982,16 @@ function getPlaceholderColor($icon_type) {
 
     // --- INTERACTIVE JOURNEY MODAL ---
     const JOURNEY_DATA = {
-      sd: {
-        title: "SD Negeri 02 Gembong",
-        year: "2013 - 2018",
-        icon: '<i class="fas fa-book-open"></i>',
+      unair: {
+        title: "Universitas Airlangga",
+        year: "2026 - Present",
+        icon: '<i class="fas fa-university"></i>',
         achievements: [
-          "Mengembangkan minat awal di bidang sains dan eksperimen teknologi sederhana.",
-          "Aktif dalam kegiatan Pramuka dan melatih dasar kepemimpinan kelompok.",
-          "Meraih peringkat kelas atas secara konsisten dan menjuarai lomba cerdas cermat tingkat sekolah."
+          "Terpilih sebagai Google Student Ambassador — mewakili Google di Universitas Airlangga dan menggerakkan mahasiswa/siswa terhadap teknologi, program, dan inisiatif Google (Okt 2026 - Sekarang)."
         ],
-        certs: []
+        certs: [
+          { url: "", title: "Google Student Ambassador" }, // TODO: ganti dengan URL gambar bukti
+        ]
       },
       smp: {
         title: "SMP Negeri 4 Pati",
@@ -5789,12 +6068,23 @@ function getPlaceholderColor($icon_type) {
 
       if (data.certs && data.certs.length > 0) {
         certsSection.style.display = 'block';
-        galleryContainer.innerHTML = data.certs.map(cert => `
-          <div class="journey-modal-gallery-item" onclick="openFullImg('${cert.url}')">
-            <img src="${cert.url}" alt="${cert.title}" loading="lazy">
-            <div class="journey-modal-gallery-item-title">${cert.title}</div>
-          </div>
-        `).join('');
+        galleryContainer.innerHTML = data.certs.map(cert => {
+          // URL kosong = gambar belum di-upload -> render placeholder, bukan img rusak
+          if (!cert.url) {
+            return `
+              <div class="journey-modal-gallery-item cert-placeholder">
+                <i class="fas fa-image"></i>
+                <div class="journey-modal-gallery-item-title">${cert.title}</div>
+              </div>
+            `;
+          }
+          return `
+            <div class="journey-modal-gallery-item" onclick="openFullImg('${cert.url}')">
+              <img src="${cert.url}" alt="${cert.title}" loading="lazy">
+              <div class="journey-modal-gallery-item-title">${cert.title}</div>
+            </div>
+          `;
+        }).join('');
       } else {
         certsSection.style.display = 'none';
         galleryContainer.innerHTML = '';
