@@ -358,20 +358,31 @@ function getPlaceholderColor($icon_type) {
   
   
   <style>
-    /* --- RESET & VARIABLES --- */
+    /* --- RESET & VARIABLES (UPGRADED DESIGN SYSTEM — originalitas tetap) --- */
     :root {
       --primary: #00f3ff;
       --secondary: #bc13fe;
       --tertiary: #00ff9d;
       --firefly: #ccff00;
       --bg-dark: #050505;
-      --bg-card: rgba(20, 20, 25, 0.6);
+      --bg-dark-2: #0a0a0f;
+      --bg-card: rgba(20, 20, 25, 0.62);
+      --bg-card-hover: rgba(24, 24, 33, 0.78);
       --glass-border: rgba(255, 255, 255, 0.08);
+      --glass-border-strong: rgba(255, 255, 255, 0.12);
       --glass-shine: rgba(255, 255, 255, 0.03);
       --text-main: #ffffff;
-      --text-muted: #a0a0a0;
+      --text-muted: #a8adb7;
+      --text-faint: #7a7f8a;
       --font-main: 'Outfit', sans-serif;
       --font-mono: 'Space Grotesk', monospace;
+      --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+      --radius-lg: 24px;
+      --radius-md: 16px;
+      --shadow-soft: 0 10px 40px rgba(0,0,0,0.35);
+      --shadow-glow: 0 0 28px rgba(0,243,255,0.18);
     }
     
     * {
@@ -405,11 +416,47 @@ function getPlaceholderColor($icon_type) {
     
     html {
       scroll-behavior: smooth;
+      scrollbar-gutter: stable;
     }
-    
+
+    /* Skip link for accessibility */
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 12px;
+      background: #fff;
+      color: #000;
+      padding: 10px 16px;
+      border-radius: 999px;
+      font-weight: 700;
+      z-index: 100000;
+    }
+    .skip-link:focus { left: 12px; }
+
+    /* Scroll progress bar */
+    #scrollProgress {
+      position: fixed;
+      top: 0; left: 0;
+      width: 0%;
+      height: 2px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary), var(--tertiary));
+      z-index: 10002;
+      transform-origin: left;
+      opacity: 0.95;
+      pointer-events: none;
+    }
+
+    /* Subtle page grain + vignette — premium but not noisy */
+    body::after {
+      content: '';
+    }
+
     body {
       font-family: var(--font-main);
-      background-color: var(--bg-dark);
+      background:
+        radial-gradient(900px 600px at 15% 10%, rgba(188,19,254,0.09), transparent 60%),
+        radial-gradient(1000px 700px at 85% 85%, rgba(0,243,255,0.07), transparent 60%),
+        var(--bg-dark);
       color: var(--text-main);
       overflow-x: hidden;
       position: relative;
@@ -3587,10 +3634,115 @@ function getPlaceholderColor($icon_type) {
       cursor: not-allowed;
       box-shadow: none;
     }
+
+    /* ── UPGRADED LOOK: motion, hover & responsive polish (tetap originalitas) ── */
+    /* Reveal on scroll */
+    .reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.7s var(--ease-smooth), transform 0.7s var(--ease-smooth); }
+    .reveal.in { opacity: 1; transform: translateY(0); }
+    @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; } }
+
+    /* Card hover lift — ganti translateY kasar jadi lebih halus */
+    .gallery-card, .testimonial-card, .skill-category, .guestbook-card {
+      will-change: transform, box-shadow;
+    }
+    .gallery-card:hover, .testimonial-card:hover {
+      transform: translateY(-8px);
+    }
+
+    /* Focus visible — accessibility tanpa ubah look */
+    a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+      border-radius: 6px;
+    }
+
+    /* Hero refined: subtle parallax glow follows scroll via CSS var */
+    .hero { position: relative; isolation: isolate; }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: -10% 0 0 0;
+      background: radial-gradient(700px 400px at 70% 20%, rgba(0,243,255,0.08), transparent 65%),
+                  radial-gradient(600px 400px at 30% 70%, rgba(188,19,254,0.07), transparent 65%);
+      pointer-events: none;
+      z-index: 0;
+      opacity: calc(0.6 + 0.4 * var(--hero-parallax, 0));
+      transform: translateY(calc(var(--hero-parallax, 0) * -18px));
+      transition: transform 0.2s linear;
+    }
+
+    /* Gallery filter pill — active lebih premium */
+    .filter-btn.active {
+      background: linear-gradient(135deg, var(--primary), var(--secondary)) !important;
+      color: #000 !important;
+      border-color: transparent !important;
+      box-shadow: 0 8px 28px rgba(0,243,255,0.28), 0 0 0 1px rgba(255,255,255,0.06) inset;
+    }
+
+    /* Pagination polish */
+    .pagination-btn, .testimonials-pagination button {
+      transition: transform 0.2s var(--ease-smooth), box-shadow 0.2s var(--ease-smooth), background 0.2s, border-color 0.2s;
+    }
+
+    /* Social buttons — icon lebih hidup */
+    .social-btn { position: relative; isolation: isolate; }
+    .social-btn i { transition: transform 0.35s var(--ease-spring); }
+    .social-btn:hover i { transform: scale(1.08); }
+
+    /* Nav blur lebih refined saat scroll */
+    nav.is-scrolled {
+      background: rgba(10,10,12,0.78) !important;
+      border-color: var(--glass-border-strong) !important;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.04) inset !important;
+    }
+
+    /* Guestbook marquee — pause halus, tidak lompat */
+    .guestbook-container { mask-image: linear-gradient(to right, transparent, black 28px, black calc(100% - 28px), transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 28px, black calc(100% - 28px), transparent); }
+
+    /* Gallery: image skeleton before load */
+    .card-img img { background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.07), rgba(255,255,255,0.04)); background-size: 200% 100%; animation: skeletonShimmer 1.8s ease-in-out infinite; }
+    .card-img img[loading="lazy"]:not([src=""]){ animation: none; background: transparent; }
+
+    /* Improve text contrast slightly without changing palette */
+    .text-reveal-anim { color: rgba(255,255,255,0.62); }
+    .text-reveal-anim.revealed { color: #c9ced8; }
+
+    /* ── RESPONSIVE UPGRADE (mobile/tablet) ── */
+    @media (max-width: 768px) {
+      .hero { padding: 96px 5% 56px; min-height: auto; }
+      .hero-text h1 { letter-spacing: -1.2px; }
+      .section-title { font-size: clamp(1.7rem, 6vw, 2.2rem); }
+      .section-header { margin-bottom: 42px; }
+      section { padding: 64px 5%; }
+      .gallery-grid { gap: 18px; grid-template-columns: 1fr; }
+      .testimonials-grid { gap: 16px; }
+      .testimonial-section { padding: 64px 5%; }
+      .github-card-container { margin: 0 auto; }
+      .skills-grid { gap: 18px; }
+      .skill-category { padding: 24px; }
+      .guestbook-header-row { flex-direction: column; gap: 14px; align-items: stretch; }
+      .guestbook-trigger-btn { width: 100%; justify-content: center; }
+    }
+    @media (max-width: 480px) {
+      nav { top: 12px; width: 94%; padding: 10px 18px; }
+      .hero-greeting { font-size: 0.95rem; }
+      .typing-container { font-size: 1.35rem; }
+      .gallery-nav { gap: 10px; margin-bottom: 28px; }
+      .filter-btn { padding: 9px 18px; font-size: 0.9rem; }
+      .card-content { padding: 18px; }
+      .card-content h3 { font-size: 1.15rem; }
+    }
+    /* Tablet landscape — 2 kolom gallery lebih lega */
+    @media (min-width: 769px) and (max-width: 1100px) {
+      .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+      .testimonials-grid { grid-template-columns: repeat(2, 1fr); }
+    }
   </style>
 </head>
 
 <body class="no-scroll">
+  <a href="#home" class="skip-link">Lewati ke konten utama</a>
+  <div id="scrollProgress" aria-hidden="true"></div>
   <div id="preloader">
     <div class="preloader-particles" id="preloaderParticles"></div>
     <div class="loader-content">
@@ -3611,13 +3763,13 @@ function getPlaceholderColor($icon_type) {
       <i class="fas fa-code"></i> RelV
     </a>
     
-    <div class="menu-toggle">
+    <button class="menu-toggle" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="primaryNav">
       <span></span>
       <span></span>
       <span></span>
-    </div>
-    
-    <ul class="nav-links">
+    </button>
+
+    <ul class="nav-links" id="primaryNav">
       <li><a href="#home" class="active">Home</a></li>
       <li><a href="#education">Education</a></li>
       <li><a href="#skills">Skills</a></li>
@@ -4466,6 +4618,46 @@ function getPlaceholderColor($icon_type) {
       });
     });
     
+    // Scroll progress + nav scrolled state + hero parallax + reveal observer
+    (function initPolishMotion(){
+      const bar = document.getElementById('scrollProgress');
+      const nav = document.querySelector('nav');
+      let ticking = false;
+      function onScroll(){
+        if(ticking) return;
+        ticking = true;
+        requestAnimationFrame(()=>{
+          const h = document.documentElement;
+          const max = h.scrollHeight - h.clientHeight;
+          const p = max > 0 ? (window.scrollY / max) * 100 : 0;
+          if(bar) bar.style.width = p.toFixed(2) + '%';
+          if(nav) nav.classList.toggle('is-scrolled', window.scrollY > 24);
+          document.documentElement.style.setProperty('--hero-parallax', Math.min(window.scrollY / 900, 1).toString());
+          ticking = false;
+        });
+      }
+      window.addEventListener('scroll', onScroll, {passive:true});
+      onScroll();
+
+      // Light reveal for gallery/testimonials/skills (AOS tetap, ini tambahan halus)
+      const revealEls = document.querySelectorAll('.gallery-card, .testimonial-card, .skill-category');
+      revealEls.forEach(el=> el.classList.add('reveal'));
+      const ro = new IntersectionObserver((entries)=>{
+        entries.forEach(e=>{
+          if(e.isIntersecting){
+            e.target.classList.add('in');
+            ro.unobserve(e.target);
+          }
+        });
+      }, {threshold: 0.12, rootMargin: '0px 0px -40px 0px'});
+      revealEls.forEach(el=> ro.observe(el));
+
+      // Respect reduced motion: kill heavy parallax & cursor if needed
+      if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+        document.documentElement.style.setProperty('--hero-parallax','0');
+      }
+    })();
+
     // --- Typing Animation (Smooth Character-by-Character with CSS) ---
     const words = ["Tech Enthusiast", "Developer", "Visual Designer"];
     let wordIndex = 0;
@@ -4526,33 +4718,35 @@ function getPlaceholderColor($icon_type) {
 
     typingLoop();
     
-    // --- Navbar Logic ---
+    // --- Navbar Logic (accessible + anim-safe) ---
     const menuToggle = document.querySelector('.menu-toggle');
     const navLinks = document.querySelector('.nav-links');
-    
-    menuToggle.addEventListener('click', () => {
-      navLinks.classList.toggle('active');
-      
+    function setMenu(open){
+      navLinks.classList.toggle('active', open);
+      menuToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      menuToggle.setAttribute('aria-label', open ? 'Close navigation menu' : 'Open navigation menu');
       const spans = menuToggle.querySelectorAll('span');
-      if (navLinks.classList.contains('active')) {
+      if (open) {
         spans[0].style.transform = 'rotate(45deg) translate(5px, 6px)';
         spans[1].style.opacity = '0';
         spans[2].style.transform = 'rotate(-45deg) translate(5px, -6px)';
+        document.body.style.overflow = 'hidden';
       } else {
         spans[0].style.transform = 'none';
         spans[1].style.opacity = '1';
         spans[2].style.transform = 'none';
+        if(!document.getElementById('journeyModal') || document.getElementById('journeyModal').hidden) document.body.style.overflow = '';
       }
-    });
-    
+    }
+    menuToggle.addEventListener('click', () => setMenu(!navLinks.classList.contains('active')));
     document.querySelectorAll('.nav-links a').forEach(link => {
-      link.addEventListener('click', () => {
-        navLinks.classList.remove('active');
-        const spans = menuToggle.querySelectorAll('span');
-        spans[0].style.transform = 'none';
-        spans[1].style.opacity = '1';
-        spans[2].style.transform = 'none';
-      });
+      link.addEventListener('click', () => setMenu(false));
+    });
+    document.addEventListener('keydown', (e)=>{
+      if(e.key==='Escape' && navLinks.classList.contains('active')) setMenu(false);
+    });
+    document.addEventListener('click', (e)=>{
+      if(navLinks.classList.contains('active') && !navLinks.contains(e.target) && !menuToggle.contains(e.target)) setMenu(false);
     });
     
     // --- SCROLL LOGIC & FIREFLY ANIMATION (REVISED: ULTRA SMOOTH LERP) ---
@@ -4698,7 +4892,8 @@ function getPlaceholderColor($icon_type) {
       targetProgress = percent;
     });
     
-    // --- Custom Cursor & Canvas Particle Engine ---
+    // --- Custom Cursor & Canvas Particle Engine (throttled + respects reduced-motion) ---
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const cursorBulb = document.getElementById('cursorBulb');
     const cursorDot = document.getElementById('cursorDot');
     const cursorCanvas = document.getElementById('cursorCanvas');
@@ -4820,7 +5015,7 @@ function getPlaceholderColor($icon_type) {
       });
     });
     
-    // --- Gallery Filter + Pagination ---
+    // --- Gallery Filter + Pagination (with refined animation timing) ---
     const filterBtns = document.querySelectorAll('.filter-btn');
     const galleryItems = document.querySelectorAll('.gallery-card');
     const ITEMS_PER_PAGE = 4;
@@ -5028,6 +5223,10 @@ function getPlaceholderColor($icon_type) {
         if (window.matchMedia('(hover: hover)').matches) {
           setupCardInteractions(card);
         }
+        // staggered reveal feels more premium
+        card.classList.remove('in');
+        void card.offsetWidth;
+        card.classList.add('reveal','in');
       });
 
       renderPaginationControls(pageNumber);
