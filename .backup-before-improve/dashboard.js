@@ -1,0 +1,1262 @@
+/* ═══════════════════════════════════════════════════════════
+   ADMIN DASHBOARD — JavaScript
+   ═══════════════════════════════════════════════════════════ */
+
+// ───── Configuration ─────
+const SUPABASE_URL  = 'https://srkisngeashoaeiwazcr.supabase.co';
+const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNya2lzbmdlYXNob2FlaXdhemNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MjM4NDcsImV4cCI6MjA5NjM5OTg0N30.85xq9c1lbpPrNOBSm8pSZNqwdv2pTh-MWgJtFunC6wI';
+const CLOUDINARY_CLOUD  = 'dvpq5fsef';
+const CLOUDINARY_PRESET = 'portfolio_testimonials';
+const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`;
+const TABLE = 'testimonials';
+
+// ───── Supabase Client ─────
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ───── DOM Cache ─────
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+
+const DOM = {
+  // Views
+  loginView:    $('#login-view'),
+  dashView:     $('#dashboard-view'),
+  formView:     $('#form-view'),
+  listView:     $('#list-view'),
+
+  // Login
+  loginForm:    $('#login-form'),
+  loginEmail:   $('#login-email'),
+  loginPass:    $('#login-password'),
+  loginBtn:     $('#login-btn'),
+  togglePwBtn:  $('.toggle-password'),
+
+  // Sidebar
+  sidebar:      $('#sidebar'),
+  overlay:      $('#sidebar-overlay'),
+  hamburger:    $('#hamburger-btn'),
+  navNew:       $('#nav-new'),
+  navList:      $('#nav-list'),
+  logoutBtn:    $('#logout-btn'),
+  userEmail:    $('#user-email'),
+
+  // Form
+  form:         $('#testimonial-form'),
+  editId:       $('#edit-id'),
+  formTitle:    $('#form-title'),
+  formCancel:   $('#form-cancel-btn'),
+  submitBtn:    $('#submit-btn'),
+  resetBtn:     $('#reset-btn'),
+  visToggle:    $('#is_visible'),
+  visLabel:     $('#visibility-label'),
+
+  // List
+  listLoading:  $('#list-loading'),
+  listEmpty:    $('#list-empty'),
+  cardsGrid:    $('#cards-grid'),
+  searchInput:  $('#search-input'),
+  addNewBtn:    $('#add-new-btn'),
+  emptyAddBtn:  $('#empty-add-btn'),
+
+  // Guestbook
+  navGuestbook:   $('#nav-guestbook'),
+  guestbookView:  $('#guestbook-view'),
+  guestbookLoading: $('#guestbook-loading'),
+  guestbookEmpty: $('#guestbook-empty'),
+  guestbookCardsGrid: $('#guestbook-cards-grid'),
+  guestbookSearchInput: $('#guestbook-search-input'),
+
+  // Stats
+  statTotal:    $('#stat-total'),
+  statVisible:  $('#stat-visible'),
+  statHidden:   $('#stat-hidden'),
+  statRevenue:  $('#stat-revenue'),
+
+  // Modal
+  confirmModal: $('#confirm-modal'),
+  confirmTitle: $('#confirm-title'),
+  confirmMsg:   $('#confirm-message'),
+  confirmOk:    $('#confirm-ok'),
+  confirmCancel:$('#confirm-cancel'),
+
+  // Lightbox
+  lightbox:     $('#lightbox'),
+  lightboxImg:  $('#lightbox-img'),
+  lightboxClose:$('#lightbox-close'),
+
+  // Toast
+  toastContainer: $('#toast-container'),
+};
+
+// Extend DOM Cache with Gallery Elements
+DOM.navGallery = $('#nav-gallery');
+DOM.galleryView = $('#gallery-view');
+DOM.galleryLoading = $('#gallery-loading');
+DOM.galleryEmpty = $('#gallery-empty');
+DOM.galleryCardsGrid = $('#gallery-cards-grid');
+DOM.galleryAddBtn = $('#gallery-add-btn');
+DOM.galleryModal = $('#gallery-modal');
+DOM.galleryModalClose = $('#gallery-modal-close');
+DOM.galleryModalCancel = $('#gallery-modal-cancel');
+DOM.galleryForm = $('#gallery-form');
+DOM.galleryEditId = $('#gallery-edit-id');
+DOM.galleryModalTitle = $('#gallery-modal-title');
+
+// ───── State ─────
+let allTestimonials = [];
+let confirmCallback = null;
+
+// ═══════════════════════════════════════════════════════════
+// TOAST NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════
+function showToast(type, title, message = '') {
+  const icons = {
+    success: 'fa-check',
+    error:   'fa-xmark',
+    info:    'fa-info',
+  };
+
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `
+    <div class="toast-icon"><i class="fa-solid ${icons[type]}"></i></div>
+    <div class="toast-content">
+      <div class="toast-title">${title}</div>
+      ${message ? `<div class="toast-message">${message}</div>` : ''}
+    </div>
+    <button class="toast-close"><i class="fa-solid fa-xmark"></i></button>
+  `;
+
+  DOM.toastContainer.appendChild(toast);
+
+  const closeBtn = toast.querySelector('.toast-close');
+  const remove = () => {
+    toast.classList.add('exiting');
+    toast.addEventListener('animationend', () => toast.remove());
+  };
+  closeBtn.addEventListener('click', remove);
+  setTimeout(remove, 4500);
+}
+
+// ═══════════════════════════════════════════════════════════
+// CONFIRM MODAL
+// ═══════════════════════════════════════════════════════════
+function showConfirm(title, message, okText = 'Delete') {
+  return new Promise((resolve) => {
+    DOM.confirmTitle.textContent = title;
+    DOM.confirmMsg.textContent = message;
+    DOM.confirmOk.textContent = okText;
+    DOM.confirmModal.hidden = false;
+
+    const cleanup = () => {
+      DOM.confirmModal.hidden = true;
+      DOM.confirmOk.removeEventListener('click', onOk);
+      DOM.confirmCancel.removeEventListener('click', onCancel);
+    };
+    const onOk = () => { cleanup(); resolve(true); };
+    const onCancel = () => { cleanup(); resolve(false); };
+
+    DOM.confirmOk.addEventListener('click', onOk);
+    DOM.confirmCancel.addEventListener('click', onCancel);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// LIGHTBOX
+// ═══════════════════════════════════════════════════════════
+function openLightbox(src) {
+  DOM.lightboxImg.src = src;
+  DOM.lightbox.hidden = false;
+}
+DOM.lightboxClose.addEventListener('click', () => DOM.lightbox.hidden = true);
+DOM.lightbox.addEventListener('click', (e) => {
+  if (e.target === DOM.lightbox) DOM.lightbox.hidden = true;
+});
+
+// ═══════════════════════════════════════════════════════════
+// FORMAT HELPERS
+// ═══════════════════════════════════════════════════════════
+function formatRupiah(num) {
+  if (!num && num !== 0) return 'Rp 0';
+  return 'Rp ' + Number(num).toLocaleString('id-ID');
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  return new Date(dateStr).toLocaleDateString('id-ID', {
+    day: 'numeric', month: 'short', year: 'numeric',
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════════
+async function checkSession() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) {
+    showDashboard(session.user);
+  } else {
+    DOM.loginView.hidden = false;
+    DOM.dashView.hidden = true;
+  }
+}
+
+DOM.loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = DOM.loginEmail.value.trim();
+  const password = DOM.loginPass.value;
+
+  setLoading(DOM.loginBtn, true);
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+  setLoading(DOM.loginBtn, false);
+
+  if (error) {
+    showToast('error', 'Login Failed', error.message);
+    return;
+  }
+
+  showToast('success', 'Welcome Back!', `Signed in as ${email}`);
+  showDashboard(data.user);
+});
+
+DOM.logoutBtn.addEventListener('click', async () => {
+  await supabaseClient.auth.signOut();
+  DOM.loginView.hidden = false;
+  DOM.dashView.hidden = true;
+  DOM.loginForm.reset();
+  showToast('info', 'Signed Out', 'You have been logged out.');
+});
+
+// Toggle password visibility
+DOM.togglePwBtn.addEventListener('click', () => {
+  const input = DOM.loginPass;
+  const icon = DOM.togglePwBtn.querySelector('i');
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.classList.replace('fa-eye', 'fa-eye-slash');
+  } else {
+    input.type = 'password';
+    icon.classList.replace('fa-eye-slash', 'fa-eye');
+  }
+});
+
+function showDashboard(user) {
+  DOM.loginView.hidden = true;
+  DOM.dashView.hidden = false;
+  DOM.userEmail.textContent = user.email || 'admin';
+  navigateTo('list');
+}
+
+function setLoading(btn, loading) {
+  const text = btn.querySelector('.btn-text');
+  const loader = btn.querySelector('.btn-loader');
+  if (text) text.hidden = loading;
+  if (loader) loader.hidden = !loading;
+  btn.disabled = loading;
+}
+
+// ═══════════════════════════════════════════════════════════
+// SIDEBAR NAVIGATION
+// ═══════════════════════════════════════════════════════════
+function navigateTo(view) {
+  // Update nav active state
+  $$('.nav-item[data-view]').forEach(n => n.classList.remove('active'));
+  const activeNav = $(`.nav-item[data-view="${view}"]`);
+  if (activeNav) activeNav.classList.add('active');
+
+  // Hide all panels
+  DOM.formView.hidden = true;
+  DOM.listView.hidden = true;
+  if (DOM.guestbookView) DOM.guestbookView.hidden = true;
+  if (DOM.galleryView) DOM.galleryView.hidden = true;
+
+  if (view === 'form') {
+    DOM.formView.hidden = false;
+  } else if (view === 'guestbook') {
+    if (DOM.guestbookView) DOM.guestbookView.hidden = false;
+    loadGuestbook();
+  } else if (view === 'gallery') {
+    if (DOM.galleryView) DOM.galleryView.hidden = false;
+    loadGallery();
+  } else {
+    DOM.listView.hidden = false;
+    loadTestimonials();
+  }
+
+  // Close mobile sidebar
+  closeSidebar();
+}
+
+DOM.navNew.addEventListener('click', () => {
+  resetForm();
+  navigateTo('form');
+});
+DOM.navList.addEventListener('click', () => navigateTo('list'));
+DOM.navGuestbook.addEventListener('click', () => navigateTo('guestbook'));
+DOM.navGallery.addEventListener('click', () => navigateTo('gallery'));
+DOM.addNewBtn.addEventListener('click', () => {
+  resetForm();
+  navigateTo('form');
+});
+DOM.emptyAddBtn.addEventListener('click', () => {
+  resetForm();
+  navigateTo('form');
+});
+
+// ───── Mobile Sidebar ─────
+DOM.hamburger.addEventListener('click', toggleSidebar);
+DOM.overlay.addEventListener('click', closeSidebar);
+
+function toggleSidebar() {
+  DOM.sidebar.classList.toggle('open');
+  DOM.overlay.classList.toggle('open');
+}
+function closeSidebar() {
+  DOM.sidebar.classList.remove('open');
+  DOM.overlay.classList.remove('open');
+}
+
+// ═══════════════════════════════════════════════════════════
+// CLOUDINARY UPLOAD
+// ═══════════════════════════════════════════════════════════
+const UPLOAD_FIELDS = ['transfer_proof', 'project_proof', 'chat_screenshot'];
+
+UPLOAD_FIELDS.forEach((field) => {
+  const zone = $(`.upload-zone[data-target="${field}"]`);
+  const fileInput = $(`#file-${field}`);
+  const placeholder = $(`#placeholder-${field}`);
+  const preview = $(`#preview-${field}`);
+  const progress = $(`#progress-${field}`);
+  const hiddenInput = $(`#${field}`);
+
+  // Click to open file picker
+  zone.addEventListener('click', (e) => {
+    if (e.target.closest('.remove-upload')) return;
+    fileInput.click();
+  });
+
+  // Drag & drop
+  zone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    zone.classList.add('dragging');
+  });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragging'));
+  zone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    zone.classList.remove('dragging');
+    if (e.dataTransfer.files.length) {
+      uploadFile(e.dataTransfer.files[0], field);
+    }
+  });
+
+  // File input change
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) {
+      uploadFile(fileInput.files[0], field);
+      fileInput.value = '';
+    }
+  });
+
+  // Remove upload
+  const removeBtn = zone.querySelector('.remove-upload');
+  removeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    hiddenInput.value = '';
+    preview.hidden = true;
+    placeholder.hidden = false;
+  });
+});
+
+async function uploadFile(file, field) {
+  const placeholder = $(`#placeholder-${field}`);
+  const preview = $(`#preview-${field}`);
+  const progressEl = $(`#progress-${field}`);
+  const progressFill = progressEl.querySelector('.progress-fill');
+  const progressText = progressEl.querySelector('.progress-text');
+  const hiddenInput = $(`#${field}`);
+
+  // Validate file
+  if (!file.type.startsWith('image/')) {
+    showToast('error', 'Invalid File', 'Please upload an image file.');
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    showToast('error', 'File Too Large', 'Maximum file size is 10MB.');
+    return;
+  }
+
+  // Show progress
+  placeholder.hidden = true;
+  preview.hidden = true;
+  progressEl.hidden = false;
+  progressFill.style.width = '0%';
+  progressText.textContent = '0%';
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', CLOUDINARY_PRESET);
+
+  try {
+    const xhr = new XMLHttpRequest();
+
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable) {
+        const pct = Math.round((e.loaded / e.total) * 100);
+        progressFill.style.width = pct + '%';
+        progressText.textContent = pct + '%';
+      }
+    });
+
+    const result = await new Promise((resolve, reject) => {
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(JSON.parse(xhr.responseText));
+        } else {
+          reject(new Error('Upload failed'));
+        }
+      };
+      xhr.onerror = () => reject(new Error('Upload error'));
+      xhr.open('POST', CLOUDINARY_URL);
+      xhr.send(formData);
+    });
+
+    // Success
+    hiddenInput.value = result.secure_url;
+    const previewImg = preview.querySelector('img');
+    previewImg.src = result.secure_url;
+    progressEl.hidden = true;
+    preview.hidden = false;
+    showToast('success', 'Upload Complete', file.name);
+
+  } catch (err) {
+    progressEl.hidden = true;
+    placeholder.hidden = false;
+    showToast('error', 'Upload Failed', err.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// VISIBILITY TOGGLE LABEL
+// ═══════════════════════════════════════════════════════════
+DOM.visToggle.addEventListener('change', () => {
+  DOM.visLabel.textContent = DOM.visToggle.checked ? 'Visible' : 'Hidden';
+});
+
+// ═══════════════════════════════════════════════════════════
+// FORM SUBMIT (CREATE / UPDATE)
+// ═══════════════════════════════════════════════════════════
+DOM.form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const isEdit = !!DOM.editId.value;
+
+  const payload = {
+    customer_name:    $('#customer_name').value.trim(),
+    project_title:    $('#project_title').value.trim(),
+    category:         $('#category').value,
+    price:            parseInt($('#price').value) || 0,
+    transfer_proof:   $('#transfer_proof').value || null,
+    project_proof:    $('#project_proof').value || null,
+    chat_screenshot:  $('#chat_screenshot').value || null,
+    project_link:     $('#project_link').value.trim() || null,
+    demo_video_url:   $('#demo_video_url').value.trim() || null,
+    proof_type:       $('#proof_type').value,
+    transaction_date: $('#transaction_date').value || null,
+    is_visible:       DOM.visToggle.checked,
+  };
+
+  setLoading(DOM.submitBtn, true);
+
+  try {
+    let error;
+
+    if (isEdit) {
+      ({ error } = await supabaseClient
+        .from(TABLE)
+        .update(payload)
+        .eq('id', DOM.editId.value));
+    } else {
+      ({ error } = await supabaseClient
+        .from(TABLE)
+        .insert([payload]));
+    }
+
+    if (error) throw error;
+
+    showToast('success',
+      isEdit ? 'Testimonial Updated' : 'Testimonial Created',
+      payload.customer_name
+    );
+
+    resetForm();
+    navigateTo('list');
+
+  } catch (err) {
+    showToast('error', 'Save Failed', err.message);
+  } finally {
+    setLoading(DOM.submitBtn, false);
+  }
+});
+
+// Reset & Cancel
+DOM.resetBtn.addEventListener('click', resetForm);
+DOM.formCancel.addEventListener('click', () => {
+  resetForm();
+  navigateTo('list');
+});
+
+function resetForm() {
+  DOM.form.reset();
+  DOM.editId.value = '';
+  DOM.formTitle.innerHTML = '<i class="fa-solid fa-plus-circle"></i> New Testimonial';
+  DOM.formCancel.hidden = true;
+  DOM.visLabel.textContent = 'Visible';
+  DOM.visToggle.checked = true;
+
+  // Clear upload previews
+  UPLOAD_FIELDS.forEach((field) => {
+    $(`#${field}`).value = '';
+    $(`#preview-${field}`).hidden = true;
+    $(`#placeholder-${field}`).hidden = false;
+    $(`#progress-${field}`).hidden = true;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// LOAD & RENDER TESTIMONIALS
+// ═══════════════════════════════════════════════════════════
+async function loadTestimonials() {
+  DOM.listLoading.hidden = false;
+  DOM.listEmpty.hidden = true;
+  DOM.cardsGrid.innerHTML = '';
+
+  try {
+    const { data, error } = await supabaseClient
+      .from(TABLE)
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    allTestimonials = data || [];
+    updateStats();
+    renderCards(allTestimonials);
+
+  } catch (err) {
+    showToast('error', 'Load Failed', err.message);
+  } finally {
+    DOM.listLoading.hidden = true;
+  }
+}
+
+function updateStats() {
+  const total   = allTestimonials.length;
+  const visible = allTestimonials.filter(t => t.is_visible).length;
+  const hidden  = total - visible;
+  const revenue = allTestimonials.reduce((sum, t) => sum + (t.price || 0), 0);
+
+  DOM.statTotal.textContent   = total;
+  DOM.statVisible.textContent = visible;
+  DOM.statHidden.textContent  = hidden;
+  DOM.statRevenue.textContent = formatRupiah(revenue);
+}
+
+function renderCards(testimonials) {
+  DOM.cardsGrid.innerHTML = '';
+
+  if (!testimonials.length) {
+    DOM.listEmpty.hidden = false;
+    return;
+  }
+
+  DOM.listEmpty.hidden = true;
+
+  testimonials.forEach((t) => {
+    const card = document.createElement('div');
+    card.className = `testimonial-card${t.is_visible ? '' : ' hidden-card'}`;
+    card.dataset.id = t.id;
+
+    // Collect thumbnail images
+    const thumbs = [t.transfer_proof, t.project_proof, t.chat_screenshot].filter(Boolean);
+
+    card.innerHTML = `
+      <span class="card-visibility-badge ${t.is_visible ? 'visible' : 'hidden-badge'}">
+        <i class="fa-solid ${t.is_visible ? 'fa-eye' : 'fa-eye-slash'}"></i>
+        ${t.is_visible ? 'Visible' : 'Hidden'}
+      </span>
+
+      ${thumbs.length ? `
+        <div class="card-thumbs">
+          ${thumbs.map(url => `<img src="${url}" alt="Proof" loading="lazy" onclick="openLightbox('${url}')">`).join('')}
+        </div>
+      ` : `
+        <div class="card-thumbs-empty">
+          <i class="fa-solid fa-image"></i>&nbsp; No images
+        </div>
+      `}
+
+      <div class="card-body">
+        <div class="card-top-row">
+          <span class="card-customer">${escapeHtml(t.customer_name)}</span>
+          <span class="card-category">${escapeHtml(t.category || '—')}</span>
+        </div>
+        <div class="card-project">
+          <i class="fa-solid fa-briefcase"></i>
+          ${escapeHtml(t.project_title)}
+        </div>
+        <div class="card-meta">
+          <span class="card-price">${formatRupiah(t.price)}</span>
+          <span class="card-date">
+            <i class="fa-solid fa-calendar"></i>
+            ${formatDate(t.transaction_date)}
+          </span>
+        </div>
+      </div>
+
+      <div class="card-actions">
+        <button class="btn-icon toggle-vis" title="Toggle visibility" data-id="${t.id}" data-visible="${t.is_visible}">
+          <i class="fa-solid ${t.is_visible ? 'fa-eye-slash' : 'fa-eye'}"></i>
+        </button>
+        <button class="btn-icon edit" title="Edit" data-id="${t.id}">
+          <i class="fa-solid fa-pen-to-square"></i>
+        </button>
+        <button class="btn-icon delete" title="Delete" data-id="${t.id}">
+          <i class="fa-solid fa-trash-can"></i>
+        </button>
+      </div>
+    `;
+
+    DOM.cardsGrid.appendChild(card);
+  });
+
+  // Attach card action listeners
+  attachCardListeners();
+}
+
+function attachCardListeners() {
+  // Toggle visibility
+  DOM.cardsGrid.querySelectorAll('.toggle-vis').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      const currentlyVisible = btn.dataset.visible === 'true';
+      const newVal = !currentlyVisible;
+
+      const { error } = await supabaseClient
+        .from(TABLE)
+        .update({ is_visible: newVal })
+        .eq('id', id);
+
+      if (error) {
+        showToast('error', 'Update Failed', error.message);
+        return;
+      }
+
+      showToast('success', newVal ? 'Now Visible' : 'Now Hidden');
+      loadTestimonials();
+    });
+  });
+
+  // Edit
+  DOM.cardsGrid.querySelectorAll('.edit').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const t = allTestimonials.find(x => String(x.id) === String(id));
+      if (t) populateForm(t);
+    });
+  });
+
+  // Delete
+  DOM.cardsGrid.querySelectorAll('.delete').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      const t = allTestimonials.find(x => String(x.id) === String(id));
+      const name = t ? t.customer_name : 'this testimonial';
+
+      const ok = await showConfirm(
+        'Delete Testimonial?',
+        `Are you sure you want to delete "${name}"? This action cannot be undone.`
+      );
+
+      if (!ok) return;
+
+      const { error } = await supabaseClient
+        .from(TABLE)
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        showToast('error', 'Delete Failed', error.message);
+        return;
+      }
+
+      showToast('success', 'Deleted', `"${name}" has been removed.`);
+      loadTestimonials();
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// POPULATE FORM FOR EDIT
+// ═══════════════════════════════════════════════════════════
+function populateForm(t) {
+  navigateTo('form');
+
+  DOM.editId.value = t.id;
+  DOM.formTitle.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Edit Testimonial';
+  DOM.formCancel.hidden = false;
+
+  $('#customer_name').value   = t.customer_name || '';
+  $('#project_title').value   = t.project_title || '';
+  $('#category').value        = t.category || '';
+  $('#price').value           = t.price || '';
+  $('#project_link').value    = t.project_link || '';
+  $('#demo_video_url').value  = t.demo_video_url || '';
+  $('#proof_type').value      = t.proof_type || 'image';
+  $('#transaction_date').value= t.transaction_date || '';
+  DOM.visToggle.checked      = t.is_visible !== false;
+  DOM.visLabel.textContent   = DOM.visToggle.checked ? 'Visible' : 'Hidden';
+
+  // Restore upload previews
+  UPLOAD_FIELDS.forEach((field) => {
+    const url = t[field];
+    const hiddenInput = $(`#${field}`);
+    const placeholder = $(`#placeholder-${field}`);
+    const preview = $(`#preview-${field}`);
+
+    hiddenInput.value = url || '';
+
+    if (url) {
+      preview.querySelector('img').src = url;
+      preview.hidden = false;
+      placeholder.hidden = true;
+    } else {
+      preview.hidden = true;
+      placeholder.hidden = false;
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// SEARCH / FILTER
+// ═══════════════════════════════════════════════════════════
+DOM.searchInput.addEventListener('input', () => {
+  const q = DOM.searchInput.value.toLowerCase().trim();
+  if (!q) {
+    renderCards(allTestimonials);
+    return;
+  }
+  const filtered = allTestimonials.filter(t =>
+    (t.customer_name || '').toLowerCase().includes(q) ||
+    (t.project_title || '').toLowerCase().includes(q) ||
+    (t.category || '').toLowerCase().includes(q)
+  );
+  renderCards(filtered);
+});
+
+// ═══════════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════════
+function escapeHtml(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ═══════════════════════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════════════════════════
+document.addEventListener('keydown', (e) => {
+  // Escape to close modals/lightbox
+  if (e.key === 'Escape') {
+    if (!DOM.lightbox.hidden) DOM.lightbox.hidden = true;
+    if (!DOM.confirmModal.hidden) {
+      DOM.confirmModal.hidden = true;
+    }
+    closeSidebar();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+// GUESTBOOK MODERATION LOGIC
+// ═══════════════════════════════════════════════════════════
+let allGuestbookMessages = [];
+
+async function loadGuestbook() {
+  if (!DOM.guestbookLoading) return;
+  DOM.guestbookLoading.hidden = false;
+  DOM.guestbookEmpty.hidden = true;
+  DOM.guestbookCardsGrid.innerHTML = '';
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('guestbook')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    allGuestbookMessages = data || [];
+    renderGuestbookCards(allGuestbookMessages);
+
+  } catch (err) {
+    showToast('error', 'Load Guestbook Failed', err.message);
+  } finally {
+    DOM.guestbookLoading.hidden = true;
+  }
+}
+
+function renderGuestbookCards(messages) {
+  DOM.guestbookCardsGrid.innerHTML = '';
+
+  if (!messages.length) {
+    DOM.guestbookEmpty.hidden = false;
+    return;
+  }
+
+  DOM.guestbookEmpty.hidden = true;
+
+  messages.forEach((msg) => {
+    const card = document.createElement('div');
+    card.className = `guestbook-card ${msg.is_approved ? 'approved-card' : 'pending-card'}`;
+
+    const dateStr = new Date(msg.created_at).toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const starsHtml = '<span style="color: #ffaa00; font-size: 0.9rem; margin-top: 2px;">' + '★'.repeat(msg.rating || 5) + '☆'.repeat(5 - (msg.rating || 5)) + '</span>';
+
+    card.innerHTML = `
+      <div class="guestbook-card-header">
+        <div class="guestbook-card-info">
+          <span class="guestbook-card-author" style="display: inline-flex; align-items: center; gap: 8px;">${escapeHtml(msg.name)} ${starsHtml}</span>
+          <span class="guestbook-card-timestamp">${dateStr}</span>
+        </div>
+        <span class="guestbook-card-status ${msg.is_approved ? 'approved' : 'pending'}">
+          ${msg.is_approved ? 'Approved' : 'Pending'}
+        </span>
+      </div>
+      <div class="guestbook-card-body">
+        ${escapeHtml(msg.message)}
+      </div>
+      <div class="guestbook-card-actions">
+        <button class="btn btn-sm ${msg.is_approved ? 'btn-ghost' : 'btn-primary'} btn-toggle-approve" data-id="${msg.id}" data-approved="${msg.is_approved}">
+          <i class="fa-solid ${msg.is_approved ? 'fa-eye-slash' : 'fa-check'}"></i>
+          <span>${msg.is_approved ? 'Hide' : 'Approve'}</span>
+        </button>
+        <button class="btn btn-sm btn-danger btn-delete-msg" data-id="${msg.id}">
+          <i class="fa-solid fa-trash-can"></i>
+          <span>Delete</span>
+        </button>
+      </div>
+    `;
+
+    DOM.guestbookCardsGrid.appendChild(card);
+  });
+
+  // Attach event listeners to guestbook actions
+  DOM.guestbookCardsGrid.querySelectorAll('.btn-toggle-approve').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const btnEl = e.currentTarget;
+      const id = btnEl.getAttribute('data-id');
+      const approved = btnEl.getAttribute('data-approved') === 'true';
+      await toggleGuestbookApproval(id, approved);
+    });
+  });
+
+  DOM.guestbookCardsGrid.querySelectorAll('.btn-delete-msg').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const id = e.currentTarget.getAttribute('data-id');
+      confirmDeleteGuestbookMessage(id);
+    });
+  });
+}
+
+async function toggleGuestbookApproval(id, currentApproved) {
+  try {
+    const { error } = await supabaseClient
+      .from('guestbook')
+      .update({ is_approved: !currentApproved })
+      .eq('id', id);
+
+    if (error) throw error;
+
+    showToast('success', 'Status Updated', `Message status successfully changed.`);
+    loadGuestbook();
+  } catch (err) {
+    showToast('error', 'Update Failed', err.message);
+  }
+}
+
+async function confirmDeleteGuestbookMessage(id) {
+  const confirmed = await showConfirm(
+    'Delete Message?',
+    'Apakah Anda yakin ingin menghapus pesan ini secara permanen dari Guestbook?',
+    'Delete'
+  );
+  if (confirmed) {
+    try {
+      const { error } = await supabaseClient
+        .from('guestbook')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      showToast('success', 'Deleted Successfully', 'Message deleted from guestbook.');
+      loadGuestbook();
+    } catch (err) {
+      showToast('error', 'Delete Failed', err.message);
+    }
+  }
+}
+
+DOM.guestbookSearchInput.addEventListener('input', () => {
+  const q = DOM.guestbookSearchInput.value.toLowerCase().trim();
+  if (!q) {
+    renderGuestbookCards(allGuestbookMessages);
+    return;
+  }
+  const filtered = allGuestbookMessages.filter(msg =>
+    (msg.name || '').toLowerCase().includes(q) ||
+    (msg.message || '').toLowerCase().includes(q)
+  );
+  renderGuestbookCards(filtered);
+});
+
+// ═══════════════════════════════════════════════════════════
+// GALLERY MANAGEMENT
+// ═══════════════════════════════════════════════════════════
+let allGalleryItems = [];
+
+async function triggerClearCache() {
+  try {
+    const res = await fetch('clear_cache.php');
+    const data = await res.json();
+    if (data.success) {
+      console.log('Server cache cleared successfully.');
+    } else {
+      console.error('Failed to clear server cache:', data.message);
+    }
+  } catch (err) {
+    console.error('Network error while clearing cache:', err);
+  }
+}
+
+// Bind Cloudinary upload for gallery image
+function bindGalleryImageUpload() {
+  const field = 'gallery-image';
+  const zone = $(`.upload-zone[data-target="${field}"]`);
+  if (!zone) return;
+  const fileInput = $(`#file-${field}`);
+  const placeholder = $(`#placeholder-${field}`);
+  const preview = $(`#preview-${field}`);
+  const progress = $(`#progress-${field}`);
+  const hiddenInput = $(`#${field}`);
+
+  zone.addEventListener('click', (e) => {
+    if (e.target.closest('.remove-upload')) return;
+    fileInput.click();
+  });
+
+  zone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    zone.classList.add('dragging');
+  });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragging'));
+  zone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    zone.classList.remove('dragging');
+    if (e.dataTransfer.files.length) {
+      uploadFile(e.dataTransfer.files[0], field);
+    }
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) {
+      uploadFile(fileInput.files[0], field);
+      fileInput.value = '';
+    }
+  });
+
+  const removeBtn = zone.querySelector('.remove-upload');
+  removeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    hiddenInput.value = '';
+    preview.hidden = true;
+    placeholder.hidden = false;
+  });
+}
+
+// Load gallery items from Supabase
+async function loadGallery() {
+  DOM.galleryLoading.hidden = false;
+  DOM.galleryEmpty.hidden = true;
+  DOM.galleryCardsGrid.innerHTML = '';
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('portfolio_gallery')
+      .select('*')
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    allGalleryItems = data || [];
+    renderGalleryCards(allGalleryItems);
+  } catch (err) {
+    showToast('error', 'Load Failed', err.message);
+  } finally {
+    DOM.galleryLoading.hidden = true;
+  }
+}
+
+// Render gallery cards in the dashboard
+function renderGalleryCards(items) {
+  DOM.galleryCardsGrid.innerHTML = '';
+
+  if (!items.length) {
+    DOM.galleryEmpty.hidden = false;
+    return;
+  }
+
+  DOM.galleryEmpty.hidden = true;
+
+  items.forEach((item) => {
+    const card = document.createElement('div');
+    card.className = `testimonial-card${item.is_visible ? '' : ' hidden-card'}`;
+    card.dataset.id = item.id;
+
+    const hasImg = !!item.image_url;
+
+    card.innerHTML = `
+      <span class="card-visibility-badge ${item.is_visible ? 'visible' : 'hidden-badge'}">
+        <i class="fa-solid ${item.is_visible ? 'fa-eye' : 'fa-eye-slash'}"></i>
+        ${item.is_visible ? 'Visible' : 'Hidden'}
+      </span>
+
+      ${hasImg ? `
+        <div class="card-thumbs">
+          <img src="${item.image_url}" alt="Thumbnail" loading="lazy" onclick="openLightbox('${item.image_url}')">
+        </div>
+      ` : `
+        <div class="card-thumbs-empty">
+          <i class="fa-solid fa-icons"></i>&nbsp; Icon: ${item.icon_type || 'trophy'}
+        </div>
+      `}
+
+      <div class="card-body">
+        <div class="card-top-row">
+          <span class="card-customer">${escapeHtml(item.sub_category)}</span>
+          <div class="gallery-card-meta">
+            <span class="badge category-${item.category}">${escapeHtml(item.category)}</span>
+          </div>
+        </div>
+        <div class="card-project">
+          <i class="fa-solid fa-heading"></i>
+          ${escapeHtml(item.title)}
+        </div>
+        <div class="card-meta">
+          <span class="card-price" style="font-size: 0.8rem; font-family: monospace;">Order: ${item.sort_order}</span>
+        </div>
+      </div>
+
+      <div class="card-actions">
+        <button class="btn-icon toggle-gallery-vis" title="Toggle visibility" data-id="${item.id}" data-visible="${item.is_visible}">
+          <i class="fa-solid ${item.is_visible ? 'fa-eye-slash' : 'fa-eye'}"></i>
+        </button>
+        <button class="btn-icon edit-gallery" title="Edit" data-id="${item.id}">
+          <i class="fa-solid fa-pen-to-square"></i>
+        </button>
+        <button class="btn-icon delete-gallery" title="Delete" data-id="${item.id}">
+          <i class="fa-solid fa-trash-can"></i>
+        </button>
+      </div>
+    `;
+
+    DOM.galleryCardsGrid.appendChild(card);
+  });
+
+  attachGalleryCardListeners();
+}
+
+function attachGalleryCardListeners() {
+  // Toggle visibility
+  DOM.galleryCardsGrid.querySelectorAll('.toggle-gallery-vis').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      const currentlyVisible = btn.dataset.visible === 'true';
+      const newVal = !currentlyVisible;
+
+      const { error } = await supabaseClient
+        .from('portfolio_gallery')
+        .update({ is_visible: newVal })
+        .eq('id', id);
+
+      if (error) {
+        showToast('error', 'Update Failed', error.message);
+        return;
+      }
+
+      showToast('success', newVal ? 'Now Visible' : 'Now Hidden');
+      await triggerClearCache();
+      loadGallery();
+    });
+  });
+
+  // Edit gallery item
+  DOM.galleryCardsGrid.querySelectorAll('.edit-gallery').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const item = allGalleryItems.find(x => String(x.id) === String(id));
+      if (item) {
+        openGalleryModal(item);
+      }
+    });
+  });
+
+  // Delete gallery item
+  DOM.galleryCardsGrid.querySelectorAll('.delete-gallery').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      confirmDeleteGalleryItem(id);
+    });
+  });
+}
+
+function openGalleryModal(item = null) {
+  DOM.galleryForm.reset();
+  
+  // Reset image upload preview
+  $('#gallery-image').value = '';
+  $('#preview-gallery-image').hidden = true;
+  $('#placeholder-gallery-image').hidden = false;
+  $('#progress-gallery-image').hidden = true;
+
+  if (item) {
+    DOM.galleryModalTitle.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Edit Gallery Item';
+    DOM.galleryEditId.value = item.id;
+    $('#gallery-category').value = item.category;
+    $('#gallery-subcategory').value = item.sub_category;
+    $('#gallery-title').value = item.title;
+    $('#gallery-description').value = item.description;
+    
+    if (item.image_url) {
+      $('#gallery-image').value = item.image_url;
+      $('#preview-img-gallery').src = item.image_url;
+      $('#preview-gallery-image').hidden = false;
+      $('#placeholder-gallery-image').hidden = true;
+    }
+    
+    $('#gallery-github').value = item.github_url || '';
+    $('#gallery-live').value = item.live_url || '';
+    $('#gallery-detail').value = item.detail_url || '';
+    $('#gallery-icon').value = item.icon_type || 'trophy';
+    $('#gallery-order').value = item.sort_order;
+    $('#gallery-visible').checked = item.is_visible;
+  } else {
+    DOM.galleryModalTitle.innerHTML = '<i class="fa-solid fa-plus-circle"></i> Add Gallery Item';
+    DOM.galleryEditId.value = '';
+    $('#gallery-order').value = '0';
+    $('#gallery-visible').checked = true;
+  }
+
+  DOM.galleryModal.hidden = false;
+}
+
+function closeGalleryModal() {
+  DOM.galleryModal.hidden = true;
+  DOM.galleryForm.reset();
+}
+
+async function confirmDeleteGalleryItem(id) {
+  const confirmed = await showConfirm(
+    'Delete Gallery Item?',
+    'Are you sure you want to permanently delete this gallery item from your portfolio?',
+    'Delete'
+  );
+  if (confirmed) {
+    try {
+      const { error } = await supabaseClient
+        .from('portfolio_gallery')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      showToast('success', 'Deleted Successfully', 'Gallery item removed.');
+      await triggerClearCache();
+      loadGallery();
+    } catch (err) {
+      showToast('error', 'Delete Failed', err.message);
+    }
+  }
+}
+
+// Bind Gallery Form Submit
+DOM.galleryForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const id = DOM.galleryEditId.value;
+  const isEdit = !!id;
+
+  const payload = {
+    category:      $('#gallery-category').value,
+    sub_category:  $('#gallery-subcategory').value.trim(),
+    title:         $('#gallery-title').value.trim(),
+    description:   $('#gallery-description').value.trim(),
+    image_url:     $('#gallery-image').value || null,
+    github_url:    $('#gallery-github').value.trim() || null,
+    live_url:      $('#gallery-live').value.trim() || null,
+    detail_url:    $('#gallery-detail').value.trim() || null,
+    icon_type:     $('#gallery-icon').value,
+    sort_order:    parseInt($('#gallery-order').value) || 0,
+    is_visible:    $('#gallery-visible').checked
+  };
+
+  const btn = $('#gallery-submit-btn');
+  setLoading(btn, true);
+
+  try {
+    let error;
+
+    if (isEdit) {
+      ({ error } = await supabaseClient
+        .from('portfolio_gallery')
+        .update(payload)
+        .eq('id', id));
+    } else {
+      ({ error } = await supabaseClient
+        .from('portfolio_gallery')
+        .insert([payload]));
+    }
+
+    if (error) throw error;
+
+    showToast('success', isEdit ? 'Item Updated' : 'Item Added', payload.title);
+    closeGalleryModal();
+    await triggerClearCache();
+    loadGallery();
+  } catch (err) {
+    showToast('error', 'Save Failed', err.message);
+  } finally {
+    setLoading(btn, false);
+  }
+});
+
+DOM.galleryAddBtn.addEventListener('click', () => openGalleryModal());
+DOM.galleryModalClose.addEventListener('click', closeGalleryModal);
+DOM.galleryModalCancel.addEventListener('click', closeGalleryModal);
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+bindGalleryImageUpload();
+checkSession();

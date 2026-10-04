@@ -1,0 +1,38 @@
+User-agent: *
+Allow: /
+
+# Explicitly allow AI Search Engines / Large Language Model Crawlers
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Anthropic-AI
+Allow: /
+
+# Allow important assets
+Allow: /assets/
+Allow: /images/
+Allow: /fonts/
+
+# Block unnecessary files
+Disallow: /api/
+Disallow: /private/
+Disallow: /dashboard.html
+Disallow: /*.json$
+
+# Sitemap location
+Sitemap: https://relv.biz.id/sitemap.xml
