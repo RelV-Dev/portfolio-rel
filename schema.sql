@@ -25,15 +25,7 @@ ALTER TABLE public.testimonials ENABLE ROW LEVEL SECURITY;
 
 -- 3. Security Policies
 -- Policy A: Allow anyone to read visible testimonials (for frontend portfolio display)
-CREATE POLICY "Allow public read access" 
-ON public.testimonials 
-FOR SELECT 
-USING (is_visible = true OR auth.role() = 'authenticated');
+-- Policies are installed by migrations/001_public_access.sql.
 
 -- Policy B: Allow logged-in admin full access (for dashboard management)
-CREATE POLICY "Allow admin full access" 
-ON public.testimonials 
-FOR ALL 
-TO authenticated 
-USING (true) 
-WITH CHECK (true);
+-- Policies are installed by migrations/001_public_access.sql.

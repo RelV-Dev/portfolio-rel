@@ -13,18 +13,10 @@ CREATE TABLE IF NOT EXISTS guestbook (
 ALTER TABLE guestbook ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Allow public (anonymous) users to view only approved guestbook entries
-CREATE POLICY "Allow public select approved entries" ON guestbook
-    FOR SELECT
-    USING (is_approved = true);
+-- Policies are installed by migrations/001_public_access.sql.
 
 -- Policy: Allow public (anonymous) users to submit entries, enforcing that is_approved MUST be false
-CREATE POLICY "Allow public insert pending entries" ON guestbook
-    FOR INSERT
-    WITH CHECK (is_approved = false);
+-- Policies are installed by migrations/001_public_access.sql.
 
 -- Policy: Allow authenticated admin users full CRUD access
-CREATE POLICY "Allow authenticated admin full CRUD" ON guestbook
-    FOR ALL
-    TO authenticated
-    USING (true)
-    WITH CHECK (true);
+-- Policies are installed by migrations/001_public_access.sql.

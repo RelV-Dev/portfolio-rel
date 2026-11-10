@@ -2,3 +2,8 @@
 *.sql
 root_htaccess.txt
 cache_gallery.json
+
+.env*
+.backup-before-improve
+.claude
+tests

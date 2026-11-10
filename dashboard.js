@@ -121,8 +121,8 @@ function showToast(type, title, message = '') {
   toast.innerHTML = `
     <div class="toast-icon"><i class="fa-solid ${icons[type]}"></i></div>
     <div class="toast-content">
-      <div class="toast-title">${title}</div>
-      ${message ? `<div class="toast-message">${message}</div>` : ''}
+      <div class="toast-title">${escapeHtml(title)}</div>
+      ${message ? `<div class="toast-message">${escapeHtml(message)}</div>` : ''}
     </div>
     <button class="toast-close"><i class="fa-solid fa-xmark"></i></button>
   `;
@@ -165,7 +165,7 @@ function showConfirm(title, message, okText = 'Delete') {
 // LIGHTBOX
 // ═══════════════════════════════════════════════════════════
 function openLightbox(src) {
-  DOM.lightboxImg.src = src;
+  DOM.lightboxImg.src = safeUrl(src);
   DOM.lightbox.hidden = false;
 }
 DOM.lightboxClose.addEventListener('click', () => DOM.lightbox.hidden = true);
@@ -191,10 +191,20 @@ function formatDate(dateStr) {
 // ═══════════════════════════════════════════════════════════
 // AUTH
 // ═══════════════════════════════════════════════════════════
+async function requireAdmin(user) {
+  const {data, error} = await supabaseClient.rpc('is_portfolio_admin');
+  if (error || data !== true) {
+    await supabaseClient.auth.signOut();
+    DOM.loginView.hidden=false; DOM.dashView.hidden=true;
+    showToast('error','Akses ditolak','Akun ini belum terdaftar sebagai admin, atau migrasi akses belum diterapkan.');
+    return false;
+  }
+  showDashboard(user); return true;
+}
 async function checkSession() {
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (session) {
-    showDashboard(session.user);
+    await requireAdmin(session.user);
   } else {
     DOM.loginView.hidden = false;
     DOM.dashView.hidden = true;
@@ -217,8 +227,7 @@ DOM.loginForm.addEventListener('submit', async (e) => {
     return;
   }
 
-  showToast('success', 'Welcome Back!', `Signed in as ${email}`);
-  showDashboard(data.user);
+  if (await requireAdmin(data.user)) showToast('success', 'Welcome Back!', `Signed in as ${email}`);
 });
 
 DOM.logoutBtn.addEventListener('click', async () => {
@@ -465,6 +474,7 @@ DOM.form.addEventListener('submit', async (e) => {
     proof_type:       $('#proof_type').value,
     transaction_date: $('#transaction_date').value || null,
     is_visible:       DOM.visToggle.checked,
+    public_proof_approved: $('#public_proof_approved').checked,
   };
 
   setLoading(DOM.submitBtn, true);
@@ -589,7 +599,7 @@ function renderCards(testimonials) {
 
       ${thumbs.length ? `
         <div class="card-thumbs">
-          ${thumbs.map(url => `<img src="${url}" alt="Proof" loading="lazy" onclick="openLightbox('${url}')">`).join('')}
+          ${thumbs.map(url => `<img src="${escapeHtml(safeUrl(url))}" alt="Proof" loading="lazy" data-preview="${escapeHtml(safeUrl(url))}" tabindex="0" role="button">`).join('')}
         </div>
       ` : `
         <div class="card-thumbs-empty">
@@ -715,6 +725,7 @@ function populateForm(t) {
   $('#demo_video_url').value  = t.demo_video_url || '';
   $('#proof_type').value      = t.proof_type || 'image';
   $('#transaction_date').value= t.transaction_date || '';
+  $('#public_proof_approved').checked = t.public_proof_approved === true;
   DOM.visToggle.checked      = t.is_visible !== false;
   DOM.visLabel.textContent   = DOM.visToggle.checked ? 'Visible' : 'Hidden';
 
@@ -758,12 +769,10 @@ DOM.searchInput.addEventListener('input', () => {
 // ═══════════════════════════════════════════════════════════
 // UTILITIES
 // ═══════════════════════════════════════════════════════════
-function escapeHtml(str) {
-  if (!str) return '';
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
+function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function safeUrl(value) { try { const u=new URL(value); return ['https:', 'http:'].includes(u.protocol)?u.href:''; } catch { return ''; } }
+document.addEventListener('click', event => { const image=event.target.closest('[data-preview]'); if (image) openLightbox(image.dataset.preview); });
+document.addEventListener('keydown', event => { if (['Enter',' '].includes(event.key) && event.target.matches('[data-preview]')) {event.preventDefault();event.target.click();} });
 
 // ═══════════════════════════════════════════════════════════
 // KEYBOARD SHORTCUTS
@@ -936,17 +945,8 @@ DOM.guestbookSearchInput.addEventListener('input', () => {
 let allGalleryItems = [];
 
 async function triggerClearCache() {
-  try {
-    const res = await fetch('clear_cache.php');
-    const data = await res.json();
-    if (data.success) {
-      console.log('Server cache cleared successfully.');
-    } else {
-      console.error('Failed to clear server cache:', data.message);
-    }
-  } catch (err) {
-    console.error('Network error while clearing cache:', err);
-  }
+  // Public pages use no-store and fetch current gallery data on each request.
+  showToast('success', 'Galeri tersimpan', 'Muat ulang halaman publik untuk melihat perubahan.');
 }
 
 // Bind Cloudinary upload for gallery image
@@ -1044,11 +1044,11 @@ function renderGalleryCards(items) {
 
       ${hasImg ? `
         <div class="card-thumbs">
-          <img src="${item.image_url}" alt="Thumbnail" loading="lazy" onclick="openLightbox('${item.image_url}')">
+          <img src="${escapeHtml(safeUrl(item.image_url))}" alt="Thumbnail" loading="lazy" data-preview="${escapeHtml(safeUrl(item.image_url))}" tabindex="0" role="button">
         </div>
       ` : `
         <div class="card-thumbs-empty">
-          <i class="fa-solid fa-icons"></i>&nbsp; Icon: ${item.icon_type || 'trophy'}
+          <i class="fa-solid fa-icons"></i>&nbsp; Icon: ${escapeHtml(item.icon_type || 'trophy')}
         </div>
       `}
 
@@ -1056,7 +1056,7 @@ function renderGalleryCards(items) {
         <div class="card-top-row">
           <span class="card-customer">${escapeHtml(item.sub_category)}</span>
           <div class="gallery-card-meta">
-            <span class="badge category-${item.category}">${escapeHtml(item.category)}</span>
+            <span class="badge category-${escapeHtml(item.category)}">${escapeHtml(item.category)}</span>
           </div>
         </div>
         <div class="card-project">
@@ -1064,7 +1064,7 @@ function renderGalleryCards(items) {
           ${escapeHtml(item.title)}
         </div>
         <div class="card-meta">
-          <span class="card-price" style="font-size: 0.8rem; font-family: monospace;">Order: ${item.sort_order}</span>
+          <span class="card-price" style="font-size: 0.8rem; font-family: monospace;">Order: ${Number(item.sort_order)||0}</span>
         </div>
       </div>
 

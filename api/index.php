@@ -1,79 +1,11 @@
 <?php
 require_once __DIR__ . '/../config.php';
 
-$gallery = [];
-$cache_valid = false;
-$bypass_cache = isset($_GET['bypass_cache']) || isset($_GET['clear_cache']);
-
-if (isset($_SERVER['VERCEL'])) {
-    // Vercel Serverless environment (uses Vercel Global Edge CDN Caching instead of file-based cache)
-    if ($bypass_cache) {
-        header('Cache-Control: no-cache, no-store, must-revalidate');
-    } else {
-        header('Cache-Control: public, max-age=0, s-maxage=1800, stale-while-revalidate=300');
-    }
-
-    $url = SUPABASE_URL . '/rest/v1/portfolio_gallery?select=*&order=sort_order.asc,created_at.desc';
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'apikey: ' . SUPABASE_KEY,
-        'Authorization: Bearer ' . SUPABASE_KEY,
-        'Content-Type: application/json'
-    ]);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
-    
-    $response = curl_exec($ch);
-    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    
-    if ($http_code === 200 && $response) {
-        $gallery = json_decode($response, true);
-        if (!is_array($gallery)) {
-            $gallery = [];
-        }
-    } else {
-        $gallery = [];
-    }
-} else {
-    // Local environment (use file-based caching)
-    if (!$bypass_cache && file_exists(CACHE_FILE)) {
-        $cache_data = @file_get_contents(CACHE_FILE);
-        if ($cache_data) {
-            $gallery = json_decode($cache_data, true);
-            if (is_array($gallery)) {
-                $cache_valid = true;
-            }
-        }
-    }
-    
-    if (!$cache_valid) {
-        $url = SUPABASE_URL . '/rest/v1/portfolio_gallery?select=*&order=sort_order.asc,created_at.desc';
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'apikey: ' . SUPABASE_KEY,
-            'Authorization: Bearer ' . SUPABASE_KEY,
-            'Content-Type: application/json'
-        ]);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
-        
-        $response = curl_exec($ch);
-        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        
-        if ($http_code === 200 && $response) {
-            $gallery = json_decode($response, true);
-            if (is_array($gallery)) {
-                @file_put_contents(CACHE_FILE, json_encode($gallery, JSON_PRETTY_PRINT));
-            } else {
-                $gallery = [];
-            }
-        } else {
-            $gallery = [];
-        }
-    }
-}
+require_once __DIR__ . '/../lib/public-data.php';
+header('Cache-Control: no-store');
+$gallery_result = portfolio_gallery();
+$gallery_failed = $gallery_result === null;
+$gallery = $gallery_result ?? [];
 
 $projects = [];
 $awards = [];
@@ -123,23 +55,23 @@ function getPlaceholderColor($icon_type) {
   <!-- Basic Meta -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
+
   <title>Farel Putra Firmansyah | Student Developer, Tech Achiever & IT Leader</title>
-  
+
   <meta name="description" content="Official portfolio of Farel Putra Firmansyah — Google Student Ambassador, student developer at SMA Negeri 3 Pati with national tech achievements (IEEE Fest, FLS3N Poster, IONIC PENS, KRENOVA, IASC) and leadership roles (Ketua SEA, Ketua KIR).">
   <meta name="keywords" content="Farel Putra Firmansyah, Google Student Ambassador, student developer Indonesia, Farel SMA 3 Pati, IEEE Competition 2025, FLS3N Poster Pati, IONIC PENS 2025, KRENOVA Pati, IASC Informatika, SEA SMAGA, KIR SMAGA, OSIS SMAN 3 Pati, student research club">
   <meta name="author" content="Farel Putra Firmansyah">
   <meta name="robots" content="index, follow">
-  
+
   <link rel="canonical" href="https://relv.biz.id">
-  
+
   <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
   <link rel="preconnect" href="https://data-id-card.vercel.app" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
   <link rel="icon" href="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841882/a7ymm1qzpmj4dfjo0opu.png">
   <link rel="apple-touch-icon" sizes="180x180" href="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841884/vfduze9bhb5zap8au4bh.png">
-  
+
   <!-- Open Graph (SEO + Beasiswa) -->
   <meta property="og:title" content="Farel Putra Firmansyah | Student Developer & Technology Achiever">
   <meta property="og:description" content="Google Student Ambassador & student portfolio highlighting academic journey, national and international technology achievements, projects, certificates, and research-oriented development.">
@@ -148,13 +80,13 @@ function getPlaceholderColor($icon_type) {
   <meta property="og:image" content="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841885/x3esj1090dipra4braiq.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  
+
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Farel Putra Firmansyah | Student Developer & Technology Achiever">
   <meta name="twitter:description" content="Portfolio showcasing academic journey, technology projects, competitions, and certifications.">
   <meta name="twitter:image" content="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841885/x3esj1090dipra4braiq.png">
-  
+
   <!-- SEO DB -->
   <script type="application/ld+json">
     <?php
@@ -360,33 +292,33 @@ function getPlaceholderColor($icon_type) {
     echo json_encode($schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     ?>
   </script>
-  
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-  
+
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
-  
+
   <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet" media="print" onload="this.media='all'">
 
 
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js" defer></script>
-  
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js" defer></script>
-  
-  <script src="https://unpkg.com/three@0.124.0/examples/js/loaders/FontLoader.js" defer></script>
-  <script src="https://unpkg.com/three@0.124.0/examples/js/geometries/TextGeometry.js" defer></script>
-  
-  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   <style>
     /* --- RESET & VARIABLES (UPGRADED DESIGN SYSTEM — originalitas tetap) --- */
     :root {
@@ -414,7 +346,7 @@ function getPlaceholderColor($icon_type) {
       --shadow-soft: 0 10px 40px rgba(0,0,0,0.35);
       --shadow-glow: 0 0 28px rgba(0,243,255,0.18);
     }
-    
+
     * {
       margin: 0;
       padding: 0;
@@ -426,24 +358,24 @@ function getPlaceholderColor($icon_type) {
     @media (hover: hover) and (pointer: fine) {
       * { cursor: none !important; }
     }
-    
+
     ::-webkit-scrollbar {
       width: 8px;
     }
-    
+
     ::-webkit-scrollbar-track {
       background: var(--bg-dark);
     }
-    
+
     ::-webkit-scrollbar-thumb {
       background: var(--glass-border);
       border-radius: 4px;
     }
-    
+
     ::-webkit-scrollbar-thumb:hover {
       background: var(--primary);
     }
-    
+
     html {
       scroll-behavior: smooth;
       scrollbar-gutter: stable;
@@ -492,13 +424,13 @@ function getPlaceholderColor($icon_type) {
       position: relative;
       line-height: 1.6;
     }
-    
+
     /* Class untuk mematikan scroll saat animasi opening */
     body.no-scroll {
       overflow: hidden;
       height: 100vh;
     }
-    
+
     /* --- 1. OPENING ANIMATION (PREMIUM WITH PARTICLES) --- */
     #preloader {
       position: fixed;
@@ -515,13 +447,13 @@ function getPlaceholderColor($icon_type) {
       transition: opacity 0.6s cubic-bezier(0.85, 0, 0.15, 1), transform 0.6s cubic-bezier(0.85, 0, 0.15, 1);
       overflow: hidden;
     }
-    
+
     #preloader.slide-up {
       opacity: 0;
       transform: scale(1.05);
       pointer-events: none;
     }
-    
+
     .loader-content {
       position: relative;
       font-family: var(--font-mono);
@@ -533,14 +465,14 @@ function getPlaceholderColor($icon_type) {
       overflow: hidden;
       z-index: 2;
     }
-    
+
     .loader-text {
       position: relative;
       display: inline-block;
       clip-path: inset(0 100% 0 0);
       animation: textSwipeAnim 0.6s cubic-bezier(0.77, 0, 0.175, 1) forwards 0.2s;
     }
-    
+
     .loader-text::before,
     .loader-text::after {
       content: attr(data-text);
@@ -551,21 +483,21 @@ function getPlaceholderColor($icon_type) {
       height: 100%;
       background: #000;
     }
-    
+
     .loader-text::before {
       left: 2px;
       text-shadow: -1px 0 var(--primary);
       animation: glitch-anim-1 0.8s infinite linear alternate-reverse;
       opacity: 0.6;
     }
-    
+
     .loader-text::after {
       left: -2px;
       text-shadow: 1px 0 #bc13fe;
       animation: glitch-anim-2 1s infinite linear alternate-reverse;
       opacity: 0.6;
     }
-    
+
     .loader-bar-container {
       position: relative;
       width: 200px;
@@ -630,7 +562,7 @@ function getPlaceholderColor($icon_type) {
       0% { background-position: 200% 0; }
       100% { background-position: -200% 0; }
     }
-    
+
     /* Keyframes Opening */
     @keyframes textSwipeAnim {
       0% {
@@ -642,17 +574,17 @@ function getPlaceholderColor($icon_type) {
         transform: translateX(0);
       }
     }
-    
+
     @keyframes glitch-anim-1 {
       0% { clip-path: inset(20% 0 80% 0); }
       100% { clip-path: inset(30% 0 20% 0); }
     }
-    
+
     @keyframes glitch-anim-2 {
       0% { clip-path: inset(10% 0 60% 0); }
       100% { clip-path: inset(0% 0 80% 0); }
     }
-    
+
     /* --- BACKGROUND ELEMENTS --- */
     .cursor-bulb {
       position: fixed;
@@ -674,17 +606,17 @@ function getPlaceholderColor($icon_type) {
       opacity: 0.15;
       animation: rotateFlower 10s linear infinite;
     }
-    
+
     @keyframes rotateFlower {
       0% {
         transform: translate(-50%, -50%) rotate(0deg);
       }
-      
+
       100% {
         transform: translate(-50%, -50%) rotate(360deg);
       }
     }
-    
+
     .cursor-dot {
       position: fixed;
       top: 0;
@@ -699,7 +631,7 @@ function getPlaceholderColor($icon_type) {
       mix-blend-mode: difference;
       transition: width 0.3s, height 0.3s, background 0.3s, border 0.3s, transform 0.1s;
     }
-    
+
     .cursor-dot.active-hover {
       width: 50px;
       height: 50px;
@@ -709,7 +641,7 @@ function getPlaceholderColor($icon_type) {
       mix-blend-mode: normal;
       animation: pulseCursor 1.5s infinite;
     }
-    
+
     .cursor-dot.active-hover::after,
     .cursor-dot.active-hover::before {
       content: '';
@@ -719,34 +651,34 @@ function getPlaceholderColor($icon_type) {
       background: var(--primary);
       transform: translate(-50%, -50%);
     }
-    
+
     .cursor-dot.active-hover::after {
       width: 2px;
       height: 10px;
     }
-    
+
     .cursor-dot.active-hover::before {
       width: 10px;
       height: 2px;
     }
-    
+
     @keyframes pulseCursor {
       0% {
         transform: translate(-50%, -50%) scale(1) rotate(0deg);
         opacity: 1;
       }
-      
+
       50% {
         transform: translate(-50%, -50%) scale(1.1) rotate(45deg);
         opacity: 0.8;
       }
-      
+
       100% {
         transform: translate(-50%, -50%) scale(1) rotate(90deg);
         opacity: 1;
       }
     }
-    
+
     body::before,
     body::after {
       content: '';
@@ -759,30 +691,30 @@ function getPlaceholderColor($icon_type) {
       opacity: 0.15;
       animation: floatOrb 10s infinite alternate;
     }
-    
+
     body::before {
       background: var(--secondary);
       top: -100px;
       left: -100px;
     }
-    
+
     body::after {
       background: var(--primary);
       bottom: -100px;
       right: -100px;
       animation-delay: -5s;
     }
-    
+
     @keyframes floatOrb {
       0% {
         transform: translate(0, 0) scale(1);
       }
-      
+
       100% {
         transform: translate(50px, 50px) scale(1.1);
       }
     }
-    
+
     /* --- NAVIGATION --- */
     nav {
       position: fixed;
@@ -804,12 +736,12 @@ function getPlaceholderColor($icon_type) {
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
       transition: all 0.4s ease;
     }
-    
+
     nav:hover {
       border-color: rgba(255, 255, 255, 0.2);
       box-shadow: 0 15px 50px rgba(0, 243, 255, 0.1);
     }
-    
+
     .logo {
       display: flex;
       align-items: center;
@@ -821,18 +753,18 @@ function getPlaceholderColor($icon_type) {
       text-decoration: none;
       letter-spacing: -0.5px;
     }
-    
+
     .logo i {
       color: var(--primary);
       text-shadow: 0 0 10px var(--primary);
     }
-    
+
     .nav-links {
       display: flex;
       gap: 35px;
       list-style: none;
     }
-    
+
     .nav-links a {
       color: var(--text-muted);
       text-decoration: none;
@@ -841,12 +773,12 @@ function getPlaceholderColor($icon_type) {
       position: relative;
       transition: color 0.3s ease;
     }
-    
+
     .nav-links a:hover,
     .nav-links a.active {
       color: #fff;
     }
-    
+
     .nav-links a::after {
       content: '';
       position: absolute;
@@ -860,11 +792,11 @@ function getPlaceholderColor($icon_type) {
       border-radius: 2px;
       transition: transform 0.3s ease;
     }
-    
+
     .nav-links a:hover::after {
       transform: translateX(-50%) scaleX(1);
     }
-    
+
     .menu-toggle {
       display: none;
       flex-direction: column;
@@ -873,7 +805,7 @@ function getPlaceholderColor($icon_type) {
       padding: 5px;
       z-index: 1001;
     }
-    
+
     .menu-toggle span {
       width: 24px;
       height: 2px;
@@ -881,7 +813,7 @@ function getPlaceholderColor($icon_type) {
       border-radius: 2px;
       transition: all 0.3s cubic-bezier(0.68, -0.6, 0.32, 1.6);
     }
-    
+
     /* --- HERO SECTION --- */
     .hero {
       min-height: 100vh;
@@ -892,7 +824,7 @@ function getPlaceholderColor($icon_type) {
       position: relative;
       overflow: hidden;
     }
-    
+
     .hero-content {
       display: flex;
       align-items: center;
@@ -901,12 +833,12 @@ function getPlaceholderColor($icon_type) {
       width: 100%;
       gap: 50px;
     }
-    
+
     .hero-text {
       flex: 1;
       z-index: 2;
     }
-    
+
     .hero-greeting {
       font-family: var(--font-mono);
       color: var(--primary);
@@ -926,7 +858,7 @@ function getPlaceholderColor($icon_type) {
       border-radius: 2px;
       opacity: 0.9;
     }
-    
+
     .hero-text h1 {
       font-size: clamp(2.4rem, 5.2vw, 4.6rem);
       font-weight: 800;
@@ -938,7 +870,7 @@ function getPlaceholderColor($icon_type) {
       letter-spacing: -0.035em;
       text-wrap: balance;
     }
-    
+
     .typing-container {
       font-size: clamp(1.35rem, 2.2vw, 2rem);
       font-weight: 600;
@@ -979,7 +911,7 @@ function getPlaceholderColor($icon_type) {
       0% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
       100% { opacity: 0; transform: translateY(-8px) scale(0.6); filter: blur(4px); }
     }
-    
+
     .cursor {
       display: inline-block;
       width: 3px;
@@ -995,20 +927,20 @@ function getPlaceholderColor($icon_type) {
       0%, 100% { opacity: 1; box-shadow: 0 0 8px rgba(0, 243, 255, 0.5); }
       50% { opacity: 0.2; box-shadow: 0 0 2px rgba(0, 243, 255, 0.2); }
     }
-    
+
     .text-reveal-anim {
       color: rgba(255, 255, 255, 0.1);
       filter: blur(5px);
       transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
       transform: translateY(10px);
     }
-    
+
     .text-reveal-anim.revealed {
       color: var(--text-muted);
       filter: blur(0);
       transform: translateY(0);
     }
-    
+
     .hero-description {
       font-size: clamp(1rem, 1.35vw, 1.08rem);
       margin-bottom: 32px;
@@ -1017,13 +949,13 @@ function getPlaceholderColor($icon_type) {
       color: #c9ced8;
       text-wrap: pretty;
     }
-    
+
     .social-links {
       display: flex;
       gap: 14px;
       flex-wrap: wrap;
     }
-    
+
     .social-btn {
       width: 50px;
       height: 50px;
@@ -1039,7 +971,7 @@ function getPlaceholderColor($icon_type) {
       position: relative;
       overflow: hidden;
     }
-    
+
     .social-btn::before {
       content: '';
       position: absolute;
@@ -1052,23 +984,23 @@ function getPlaceholderColor($icon_type) {
       transition: opacity 0.3s ease;
       z-index: -1;
     }
-    
+
     .social-btn:hover {
       transform: translateY(-5px);
       border-color: transparent;
     }
-    
+
     .social-btn:hover::before {
       opacity: 1;
     }
-    
+
     .hero-image-container {
       flex: 1;
       display: flex;
       justify-content: center;
       position: relative;
     }
-    
+
     .image-wrapper {
       position: relative;
       width: min(400px, 78vw);
@@ -1076,7 +1008,7 @@ function getPlaceholderColor($icon_type) {
       z-index: 1;
       transition: transform 0.7s var(--ease-smooth);
     }
-    
+
     .profile-img {
       width: 100%;
       height: 100%;
@@ -1091,12 +1023,12 @@ function getPlaceholderColor($icon_type) {
       border: 1px solid rgba(255, 255, 255, 0.14);
       box-shadow: 0 18px 50px rgba(0,0,0,0.45);
     }
-    
+
     .image-wrapper:hover .profile-img {
       transform: rotate(0deg) scale(1.02);
       border-color: rgba(0,243,255,0.22);
     }
-    
+
     .image-glow {
       position: absolute;
       top: 50%;
@@ -1110,16 +1042,16 @@ function getPlaceholderColor($icon_type) {
       border-radius: 50%;
       animation: pulseGlow 5s infinite alternate;
     }
-    
+
     section {
       padding: 100px 5%;
     }
-    
+
     .section-header {
       text-align: center;
       margin-bottom: 70px;
     }
-    
+
     .section-title {
       font-size: clamp(1.9rem, 3.4vw, 3rem);
       font-weight: 800;
@@ -1132,7 +1064,7 @@ function getPlaceholderColor($icon_type) {
       letter-spacing: -0.02em;
       text-wrap: balance;
     }
-    
+
     .section-title::after {
       content: '';
       position: absolute;
@@ -1144,7 +1076,7 @@ function getPlaceholderColor($icon_type) {
       background: linear-gradient(90deg, var(--primary), var(--secondary));
       border-radius: 4px;
     }
-    
+
     /* --- 3. EDUCATION (STICKY JOURNEY) REVISED --- */
     #education {
       /* UPDATE: Diperpanjang menjadi 500vh agar scroll terasa lebih lambat dan panjang */
@@ -1152,7 +1084,7 @@ function getPlaceholderColor($icon_type) {
       padding: 0;
       position: relative;
     }
-    
+
     .education-sticky-wrapper {
       position: sticky;
       top: 0;
@@ -1163,14 +1095,14 @@ function getPlaceholderColor($icon_type) {
       overflow: hidden;
       padding: 0 5%;
     }
-    
+
     .education-container {
       position: relative;
       max-width: 1200px;
       width: 100%;
       margin: 0 auto;
     }
-    
+
     .journey-line {
       position: absolute;
       top: 30px;
@@ -1181,7 +1113,7 @@ function getPlaceholderColor($icon_type) {
       background-size: 20px 100%;
       z-index: 0;
     }
-    
+
     .journey-line-progress {
       position: absolute;
       top: 30px;
@@ -1194,7 +1126,7 @@ function getPlaceholderColor($icon_type) {
       /* UPDATE: Hapus transisi CSS agar JS Handle full smooth (Lerp) atau gunakan linear minimal */
       /* Kita akan handle via JS requestAnimationFrame untuk ultra smooth */
     }
-    
+
     .journey-firefly-container {
       position: absolute;
       right: -10px;
@@ -1204,7 +1136,7 @@ function getPlaceholderColor($icon_type) {
       width: 20px;
       height: 20px;
     }
-    
+
     .firefly-glow {
       width: 12px;
       height: 12px;
@@ -1213,40 +1145,40 @@ function getPlaceholderColor($icon_type) {
       box-shadow: 0 0 15px var(--firefly), 0 0 30px var(--primary);
       animation: fireflyMeander 2s ease-in-out infinite alternate, fireflyPulse 1s ease-in-out infinite alternate;
     }
-    
+
     @keyframes fireflyMeander {
       0% {
         transform: translate(-5px, -10px);
       }
-      
+
       50% {
         transform: translate(0px, 5px);
       }
-      
+
       100% {
         transform: translate(5px, -10px);
       }
     }
-    
+
     @keyframes fireflyPulse {
       0% {
         opacity: 0.8;
         transform: scale(0.9);
       }
-      
+
       100% {
         opacity: 1;
         transform: scale(1.2);
       }
     }
-    
+
     .journey-items {
       display: flex;
       justify-content: space-between;
       position: relative;
       z-index: 1;
     }
-    
+
     .journey-item {
       flex: 1;
       text-align: center;
@@ -1257,13 +1189,13 @@ function getPlaceholderColor($icon_type) {
       transition: all 0.5s ease;
       filter: blur(2px);
     }
-    
+
     .journey-item.visible {
       opacity: 1;
       transform: translateY(0);
       filter: blur(0);
     }
-    
+
     .journey-icon {
       width: 60px;
       height: 60px;
@@ -1280,7 +1212,7 @@ function getPlaceholderColor($icon_type) {
       position: relative;
       z-index: 2;
     }
-    
+
     .journey-item.active .journey-icon {
       border-color: var(--primary);
       color: var(--primary);
@@ -1288,7 +1220,7 @@ function getPlaceholderColor($icon_type) {
       box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
       transform: scale(1.1);
     }
-    
+
     .journey-card {
       background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
       backdrop-filter: blur(14px);
@@ -1306,13 +1238,13 @@ function getPlaceholderColor($icon_type) {
       border-color: rgba(0,243,255,0.22);
       box-shadow: 0 16px 40px rgba(0,0,0,0.35), 0 0 20px rgba(0,243,255,0.12);
     }
-    
+
     .journey-card h3 {
       font-size: 1.1rem;
       color: #fff;
       margin-bottom: 5px;
     }
-    
+
     .journey-year {
       font-family: var(--font-mono);
       color: var(--secondary);
@@ -1320,11 +1252,11 @@ function getPlaceholderColor($icon_type) {
       margin-bottom: 10px;
       display: block;
     }
-    
+
     .journey-card p {
       line-height: 1.5;
     }
-    
+
     /* --- JOURNEY MODAL --- */
     .journey-modal {
       position: fixed;
@@ -1336,18 +1268,18 @@ function getPlaceholderColor($icon_type) {
       padding: 20px;
       transition: opacity 0.3s ease;
     }
-    
+
     .journey-modal[hidden] {
       display: none !important;
     }
-    
+
     .journey-modal-overlay {
       position: absolute;
       inset: 0;
       background: rgba(0, 0, 0, 0.7);
       backdrop-filter: blur(10px);
     }
-    
+
     .journey-modal-card {
       background: rgba(10, 10, 15, 0.85);
       backdrop-filter: blur(20px);
@@ -1363,12 +1295,12 @@ function getPlaceholderColor($icon_type) {
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
       animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    
+
     @keyframes modalFadeIn {
       from { opacity: 0; transform: scale(0.95) translateY(10px); }
       to { opacity: 1; transform: scale(1) translateY(0); }
     }
-    
+
     .journey-modal-close {
       position: absolute;
       top: 20px;
@@ -1385,13 +1317,13 @@ function getPlaceholderColor($icon_type) {
       cursor: pointer;
       transition: all 0.3s ease;
     }
-    
+
     .journey-modal-close:hover {
       background: var(--danger);
       border-color: transparent;
       transform: rotate(90deg);
     }
-    
+
     .journey-modal-header {
       display: flex;
       align-items: center;
@@ -1400,7 +1332,7 @@ function getPlaceholderColor($icon_type) {
       padding-bottom: 15px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
-    
+
     .journey-modal-icon-wrapper {
       width: 50px;
       height: 50px;
@@ -1413,7 +1345,7 @@ function getPlaceholderColor($icon_type) {
       font-size: 1.3rem;
       color: var(--primary);
     }
-    
+
     .journey-modal-year {
       font-family: var(--font-mono);
       color: var(--secondary);
@@ -1421,16 +1353,16 @@ function getPlaceholderColor($icon_type) {
       display: block;
       margin-bottom: 2px;
     }
-    
+
     .journey-modal-header h3 {
       font-size: 1.25rem;
       color: #fff;
     }
-    
+
     .journey-modal-section {
       margin-bottom: 20px;
     }
-    
+
     .journey-modal-section h4 {
       font-size: 0.95rem;
       color: #fff;
@@ -1440,11 +1372,11 @@ function getPlaceholderColor($icon_type) {
       align-items: center;
       gap: 8px;
     }
-    
+
     .journey-modal-section h4 i {
       color: var(--primary);
     }
-    
+
     .journey-modal-section ul {
       list-style: none;
       padding-left: 0;
@@ -1452,7 +1384,7 @@ function getPlaceholderColor($icon_type) {
       flex-direction: column;
       gap: 10px;
     }
-    
+
     .journey-modal-section li {
       font-size: 0.9rem;
       line-height: 1.6;
@@ -1460,21 +1392,21 @@ function getPlaceholderColor($icon_type) {
       position: relative;
       padding-left: 20px;
     }
-    
+
     .journey-modal-section li::before {
       content: "✦";
       position: absolute;
       left: 0;
       color: var(--secondary);
     }
-    
+
     .journey-modal-gallery {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 12px;
       margin-top: 10px;
     }
-    
+
     .journey-modal-gallery-item {
       position: relative;
       border-radius: 12px;
@@ -1484,13 +1416,13 @@ function getPlaceholderColor($icon_type) {
       cursor: zoom-in;
       transition: all 0.3s ease;
     }
-    
+
     .journey-modal-gallery-item:hover {
       transform: translateY(-3px);
       border-color: var(--primary);
       box-shadow: 0 10px 20px rgba(0, 243, 255, 0.2);
     }
-    
+
     .journey-modal-gallery-item img {
       width: 100%;
       height: 100%;
@@ -1513,7 +1445,7 @@ function getPlaceholderColor($icon_type) {
       color: var(--primary);
       filter: drop-shadow(0 0 12px rgba(0, 243, 255, 0.5));
     }
-    
+
     .journey-modal-gallery-item-title {
       position: absolute;
       bottom: 0;
@@ -1544,7 +1476,7 @@ function getPlaceholderColor($icon_type) {
       max-width: 1200px;
       margin: 0 auto;
     }
-    
+
     .skill-category {
       background: rgba(20, 20, 25, 0.4);
       backdrop-filter: blur(20px);
@@ -1555,7 +1487,7 @@ function getPlaceholderColor($icon_type) {
       position: relative;
       overflow: hidden;
     }
-    
+
     .skill-category::before {
       content: '';
       position: absolute;
@@ -1566,36 +1498,36 @@ function getPlaceholderColor($icon_type) {
       background: linear-gradient(90deg, var(--primary), transparent);
       opacity: 0.5;
     }
-    
+
     .skill-category:hover {
       border-color: rgba(255, 255, 255, 0.1);
       transform: translateY(-6px);
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255,255,255,0.04) inset;
     }
-    
+
     .skill-header {
       display: flex;
       align-items: center;
       gap: 15px;
       margin-bottom: 30px;
     }
-    
+
     .skill-header i {
       font-size: 1.8rem;
       color: var(--primary);
     }
-    
+
     .skill-header h3 {
       font-size: 1.4rem;
       margin: 0;
     }
-    
+
     .skill-icons {
       display: flex;
       flex-wrap: wrap;
       gap: 20px;
     }
-    
+
     .tech-item {
       display: flex;
       flex-direction: column;
@@ -1604,11 +1536,11 @@ function getPlaceholderColor($icon_type) {
       width: 70px;
       transition: transform 0.3s ease;
     }
-    
+
     .tech-item:hover {
       transform: translateY(-4px);
     }
-    
+
     .tech-icon-box {
       width: 50px;
       height: 50px;
@@ -1621,48 +1553,48 @@ function getPlaceholderColor($icon_type) {
       border: 1px solid transparent;
       transition: all 0.3s ease;
     }
-    
+
     .tech-item:hover .tech-icon-box {
       background: rgba(255, 255, 255, 0.08);
       border-color: var(--primary);
       box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
     }
-    
+
     .tech-name {
       font-size: 0.8rem;
       color: var(--text-muted);
       text-align: center;
     }
-    
+
     .fa-js {
       color: #f7df1e;
     }
-    
+
     .fa-python {
       color: #3776ab;
     }
-    
+
     .fa-react {
       color: #61dafb;
     }
-    
+
     .fa-php {
       color: #777bb4;
     }
-    
+
     .custom-icon {
       font-weight: bold;
       font-family: var(--font-mono);
       font-size: 1rem !important;
     }
-    
+
     /* --- GITHUB ACTIVITY SECTION (NEW 3D FEATURE) --- */
     .github-activity-section {
       padding: 50px 5%;
       background: var(--bg-dark);
     }
-    
-    
+
+
     .github-card-container {
       max-width: 1200px;
       margin: 0 auto;
@@ -1679,7 +1611,7 @@ function getPlaceholderColor($icon_type) {
       align-items: center;
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
     }
-    
+
     .github-stats-info {
       width: 35%;
       min-width: 300px;
@@ -1692,7 +1624,7 @@ function getPlaceholderColor($icon_type) {
       justify-content: center;
       border-right: 1px solid rgba(255,255,255,0.06);
     }
-    
+
     .github-stats-info h3 {
       font-size: 1.8rem;
       margin-bottom: 5px;
@@ -1701,14 +1633,14 @@ function getPlaceholderColor($icon_type) {
       align-items: center;
       gap: 10px;
     }
-    
+
     .github-username {
       font-family: var(--font-mono);
       color: var(--secondary);
       margin-bottom: 25px;
       font-size: 0.9rem;
     }
-    
+
     .stat-row {
       display: flex;
       justify-content: space-between;
@@ -1716,23 +1648,23 @@ function getPlaceholderColor($icon_type) {
       border-bottom: 1px solid rgba(255, 255, 255, 0.05);
       padding-bottom: 5px;
     }
-    
+
     .stat-label {
       color: var(--text-muted);
       font-size: 0.9rem;
     }
-    
+
     .stat-value {
       color: var(--primary);
       font-family: var(--font-mono);
       font-weight: bold;
     }
-    
+
     .stat-value.highlight {
       color: var(--firefly);
       text-shadow: 0 0 10px rgba(204, 255, 0, 0.3);
     }
-    
+
     #github-3d-canvas {
       position: absolute;
       /* Tetap absolute */
@@ -1745,7 +1677,7 @@ function getPlaceholderColor($icon_type) {
       touch-action: none;
       z-index: 1;
     }
-    
+
      @media (max-width: 900px) {
       .github-card-container {
         flex-direction: column;
@@ -1765,7 +1697,7 @@ function getPlaceholderColor($icon_type) {
         height: 380px !important;
       }
     }
-    
+
     /* --- AI ASSISTANT CHAT WIDGET (ULTIMATE VERSION) --- */
     .chat-widget-container {
       position: fixed;
@@ -1776,20 +1708,20 @@ function getPlaceholderColor($icon_type) {
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      
+
       /* Hidden during Intro */
       opacity: 0;
       transform: translateY(20px);
       pointer-events: none;
       transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
     }
-    
+
     .chat-widget-container.show-widget {
       opacity: 1;
       transform: translateY(0);
       pointer-events: all;
     }
-    
+
     /* Toggle Button (Stronger Glass) */
     .chat-toggle-btn {
       width: 60px;
@@ -1811,14 +1743,14 @@ function getPlaceholderColor($icon_type) {
       transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       z-index: 100002;
     }
-    
+
     .chat-toggle-btn:hover {
       transform: scale(1.1);
       box-shadow: 0 15px 40px rgba(0, 243, 255, 0.3);
       color: #fff;
       border-color: var(--primary);
     }
-    
+
     /* Chat Window (Stronger Glass) */
     .chat-window {
       position: absolute;
@@ -1837,29 +1769,29 @@ function getPlaceholderColor($icon_type) {
       flex-direction: column;
       overflow: hidden;
       transform-origin: bottom right;
-      
+
       /* State Closed */
       opacity: 0;
       transform: scale(0.8) translateY(20px);
       pointer-events: none;
       visibility: hidden;
-      
+
       transition:
         opacity 0.3s ease,
         transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
         visibility 0.3s;
-      
+
       box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6);
       z-index: 100001;
     }
-    
+
     .chat-window.active {
       opacity: 1;
       transform: scale(1) translateY(0);
       pointer-events: all;
       visibility: visible;
     }
-    
+
     /* Header */
     .chat-header {
       padding: 18px 24px;
@@ -1869,26 +1801,26 @@ function getPlaceholderColor($icon_type) {
       justify-content: space-between;
       align-items: center;
     }
-    
+
     .header-controls {
       display: flex;
       gap: 15px;
       align-items: center;
     }
-    
+
     .chat-title {
       display: flex;
       flex-direction: column;
       line-height: 1.2;
     }
-    
+
     .chat-name {
       font-weight: 700;
       color: #fff;
       font-size: 1.05rem;
       letter-spacing: 0.5px;
     }
-    
+
     .chat-status {
       font-size: 0.75rem;
       color: var(--text-muted);
@@ -1896,7 +1828,7 @@ function getPlaceholderColor($icon_type) {
       align-items: center;
       gap: 6px;
     }
-    
+
     .status-dot {
       width: 8px;
       height: 8px;
@@ -1904,30 +1836,30 @@ function getPlaceholderColor($icon_type) {
       border-radius: 50%;
       transition: background 0.3s;
     }
-    
+
     .status-dot.online {
       background: var(--tertiary);
       box-shadow: 0 0 10px var(--tertiary);
       animation: pulseStatus 2s infinite;
     }
-    
+
     @keyframes pulseStatus {
       0% {
         opacity: 0.6;
         transform: scale(0.9);
       }
-      
+
       50% {
         opacity: 1;
         transform: scale(1.1);
       }
-      
+
       100% {
         opacity: 0.6;
         transform: scale(0.9);
       }
     }
-    
+
     .header-btn {
       background: none;
       border: none;
@@ -1940,22 +1872,22 @@ function getPlaceholderColor($icon_type) {
       align-items: center;
       justify-content: center;
     }
-    
+
     .header-btn:hover {
       color: #fff;
       background: rgba(255, 255, 255, 0.1);
       border-radius: 50%;
     }
-    
+
     .header-btn.close-chat:hover {
       transform: rotate(90deg);
       color: #ff4757;
     }
-    
+
     .header-btn.clear-chat:hover {
       color: var(--primary);
     }
-    
+
     /* Messages Area */
     .chat-messages {
       flex: 1;
@@ -1968,16 +1900,16 @@ function getPlaceholderColor($icon_type) {
       background: rgba(0, 0, 0, 0.2);
       /* Sedikit gelap di area pesan */
     }
-    
+
     .chat-messages::-webkit-scrollbar {
       width: 4px;
     }
-    
+
     .chat-messages::-webkit-scrollbar-thumb {
       background: rgba(255, 255, 255, 0.15);
       border-radius: 4px;
     }
-    
+
     /* Bubbles */
     .message {
       max-width: 85%;
@@ -1986,19 +1918,19 @@ function getPlaceholderColor($icon_type) {
       position: relative;
       animation: popInMsg 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    
+
     @keyframes popInMsg {
       from {
         opacity: 0;
         transform: scale(0.9) translateY(10px);
       }
-      
+
       to {
         opacity: 1;
         transform: scale(1) translateY(0);
       }
     }
-    
+
     .message.user {
       align-self: flex-end;
       padding: 12px 18px;
@@ -2008,14 +1940,14 @@ function getPlaceholderColor($icon_type) {
       border-radius: 18px 18px 4px 18px;
       box-shadow: 0 5px 20px rgba(0, 243, 255, 0.2);
     }
-    
+
     .message.bot {
       align-self: flex-start;
       display: flex;
       gap: 12px;
       max-width: 95%;
     }
-    
+
     /* FIX: Profile Picture Bulat Sempurna */
     .bot-avatar {
       width: 40px;
@@ -2029,7 +1961,7 @@ function getPlaceholderColor($icon_type) {
       /* Agar tidak tergencet flexbox */
       box-shadow: 0 0 15px rgba(188, 19, 254, 0.3);
     }
-    
+
     .bot-text-content {
       background: rgba(255, 255, 255, 0.07);
       border: 1px solid rgba(255, 255, 255, 0.1);
@@ -2039,13 +1971,13 @@ function getPlaceholderColor($icon_type) {
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
       backdrop-filter: blur(5px);
     }
-    
+
     /* --- NEW & UPGRADED PRETTIER STYLES --- */
     .bot-text-content strong {
       color: var(--primary);
       font-weight: 800;
     }
-    
+
     /* Heading Style (# text) */
     .md-heading {
       display: block;
@@ -2056,11 +1988,11 @@ function getPlaceholderColor($icon_type) {
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       padding-bottom: 5px;
     }
-    
+
     .md-heading:first-child {
       margin-top: 0;
     }
-    
+
     /* Standard Text Link (in paragraph) */
     .md-link {
       color: var(--primary);
@@ -2069,12 +2001,12 @@ function getPlaceholderColor($icon_type) {
       border-bottom: 1px dotted var(--primary);
       transition: all 0.2s;
     }
-    
+
     .md-link:hover {
       background: rgba(0, 243, 255, 0.1);
       border-bottom-style: solid;
     }
-    
+
     /* "Visit Project" Chip/Button Style */
     .md-link-chip {
       display: inline-flex;
@@ -2094,7 +2026,7 @@ function getPlaceholderColor($icon_type) {
       /* Agar sejajar dengan teks */
       cursor: pointer;
     }
-    
+
     .md-link-chip::before {
       content: "";
       display: inline-block;
@@ -2107,44 +2039,44 @@ function getPlaceholderColor($icon_type) {
       margin-right: 6px;
       vertical-align: middle;
     }
-    
+
     .md-link-chip:hover {
       background: var(--primary);
       color: #000;
       box-shadow: 0 0 15px rgba(0, 243, 255, 0.5);
       transform: translateY(-2px);
     }
-    
+
     /* Icon khusus link */
     .md-link-chip i,
     .md-link-chip::before {
       font-style: normal;
       font-size: 0.9em;
     }
-    
+
     /* Email & Phone specific colors (Optional) */
     .md-link-chip.email {
       border-color: #ffaa00;
       background: rgba(255, 170, 0, 0.1);
       color: #ffaa00;
     }
-    
+
     .md-link-chip.email:hover {
       background: #ffaa00;
       color: #000;
     }
-    
+
     .md-link-chip.phone {
       border-color: #00ff9d;
       background: rgba(0, 255, 157, 0.1);
       color: #00ff9d;
     }
-    
+
     .md-link-chip.phone:hover {
       background: #00ff9d;
       color: #000;
     }
-    
+
     /* Lists & Paragraphs */
     .md-list-item {
       display: flex;
@@ -2152,23 +2084,23 @@ function getPlaceholderColor($icon_type) {
       margin-bottom: 8px;
       line-height: 1.5;
     }
-    
+
     .md-bullet {
       color: var(--tertiary);
       font-weight: bold;
       flex-shrink: 0;
       margin-top: 1px;
     }
-    
+
     .md-paragraph {
       margin-bottom: 12px;
       display: block;
     }
-    
+
     .md-paragraph:last-child {
       margin-bottom: 0;
     }
-    
+
     /* Input Area (Stronger Glass) */
     .chat-input-area {
       padding: 15px 20px;
@@ -2179,7 +2111,7 @@ function getPlaceholderColor($icon_type) {
       align-items: center;
       gap: 12px;
     }
-    
+
     .chat-input {
       flex: 1;
       background: rgba(255, 255, 255, 0.08);
@@ -2192,13 +2124,13 @@ function getPlaceholderColor($icon_type) {
       outline: none;
       transition: 0.3s;
     }
-    
+
     .chat-input:focus {
       border-color: var(--primary);
       background: rgba(255, 255, 255, 0.12);
       box-shadow: 0 0 20px rgba(0, 243, 255, 0.15);
     }
-    
+
     .chat-send-btn {
       width: 50px;
       height: 50px;
@@ -2216,36 +2148,36 @@ function getPlaceholderColor($icon_type) {
       overflow: hidden;
       font-size: 1.2rem;
     }
-    
+
     .chat-send-btn:hover {
       transform: scale(1.1) rotate(-10deg);
     }
-    
+
     /* FLYING ANIMATION */
     .chat-send-btn.flying i {
       animation: paperPlaneFly 0.8s ease-in-out forwards;
     }
-    
+
     @keyframes paperPlaneFly {
       0% {
         transform: translate(0, 0) scale(1);
         opacity: 1;
       }
-      
+
       20% {
         transform: translate(-5px, 5px) scale(0.8);
       }
-      
+
       50% {
         opacity: 1;
       }
-      
+
       100% {
         transform: translate(60px, -60px) scale(0);
         opacity: 0;
       }
     }
-    
+
     /* Typing Indicator */
     .typing-indicator {
       margin-left: 58px;
@@ -2257,11 +2189,11 @@ function getPlaceholderColor($icon_type) {
       width: fit-content;
       gap: 6px;
     }
-    
+
     .typing-indicator.active {
       display: flex;
     }
-    
+
     .typing-dot {
       width: 8px;
       height: 8px;
@@ -2269,30 +2201,30 @@ function getPlaceholderColor($icon_type) {
       border-radius: 50%;
       animation: bounce 1.4s infinite ease-in-out both;
     }
-    
+
     .typing-dot:nth-child(1) {
       animation-delay: -0.32s;
     }
-    
+
     .typing-dot:nth-child(2) {
       animation-delay: -0.16s;
     }
-    
+
     @keyframes bounce {
-      
+
       0%,
       80%,
       100% {
         transform: scale(0);
         opacity: 0.5;
       }
-      
+
       40% {
         transform: scale(1);
         opacity: 1;
       }
     }
-    
+
     @media (max-width: 480px) {
       .chat-window {
         width: 94vw;
@@ -2300,13 +2232,13 @@ function getPlaceholderColor($icon_type) {
         bottom: 85px;
         right: 0;
       }
-      
+
       .chat-widget-container {
         right: 3vw;
         bottom: 20px;
       }
     }
-    
+
     /* --- GALLERY --- */
     .gallery-nav {
       display: flex;
@@ -2315,7 +2247,7 @@ function getPlaceholderColor($icon_type) {
       margin-bottom: 50px;
       flex-wrap: wrap;
     }
-    
+
     .filter-btn {
       padding: 10px 22px;
       background: transparent;
@@ -2336,7 +2268,7 @@ function getPlaceholderColor($icon_type) {
       border-color: var(--glass-border-strong);
       background: rgba(255,255,255,0.06);
     }
-    
+
     .gallery-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -2344,7 +2276,7 @@ function getPlaceholderColor($icon_type) {
       max-width: 1300px;
       margin: 0 auto;
     }
-    
+
     .gallery-card {
       background: var(--bg-card);
       border: 1px solid var(--glass-border);
@@ -2355,44 +2287,44 @@ function getPlaceholderColor($icon_type) {
       opacity: 1;
       transform: scale(1);
     }
-    
+
     .gallery-card.hide {
       display: none;
     }
-    
+
     .gallery-card.anim-out {
       opacity: 0;
       transform: scale(0.9);
     }
-    
+
     .gallery-card.anim-in {
       animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
     }
-    
+
     @keyframes popIn {
       from {
         opacity: 0;
         transform: scale(0.9);
       }
-      
+
       to {
         opacity: 1;
         transform: scale(1);
       }
     }
-    
+
     .gallery-card:hover {
       transform: translateY(-10px);
       border-color: var(--tertiary);
       box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
     }
-    
+
     .card-img {
       position: relative;
       height: 220px;
       overflow: hidden;
     }
-    
+
     .card-img img {
       width: 100%;
       height: 100%;
@@ -2402,7 +2334,7 @@ function getPlaceholderColor($icon_type) {
     .gallery-card:hover .card-img img {
       transform: scale(1.06);
     }
-    
+
     .card-overlay {
       position: absolute;
       top: 0;
@@ -2417,11 +2349,11 @@ function getPlaceholderColor($icon_type) {
       transition: opacity 0.3s ease;
       gap: 15px;
     }
-    
+
     .gallery-card:hover .card-overlay {
       opacity: 1;
     }
-    
+
     .overlay-btn {
       width: 45px;
       height: 45px;
@@ -2435,15 +2367,15 @@ function getPlaceholderColor($icon_type) {
       transform: translateY(20px);
       transition: all 0.3s ease;
     }
-    
+
     .gallery-card:hover .overlay-btn {
       transform: translateY(0);
     }
-    
+
     .card-content {
       padding: 25px;
     }
-    
+
     .card-category {
       font-size: 0.8rem;
       color: var(--primary);
@@ -2452,19 +2384,19 @@ function getPlaceholderColor($icon_type) {
       margin-bottom: 10px;
       display: block;
     }
-    
+
     .card-content h3 {
       font-size: 1.3rem;
       margin-bottom: 10px;
       color: #fff;
     }
-    
+
     .card-content p {
       color: var(--text-muted);
       font-size: 0.9rem;
       margin-bottom: 0;
     }
-    
+
     /* --- FOOTER --- */
     footer {
       background: rgba(5, 5, 8, 0.95);
@@ -2472,7 +2404,7 @@ function getPlaceholderColor($icon_type) {
       padding: 60px 5% 30px;
       text-align: center;
     }
-    
+
     .footer-logo {
       font-size: 2rem;
       font-weight: 800;
@@ -2481,24 +2413,24 @@ function getPlaceholderColor($icon_type) {
       margin-bottom: 20px;
       display: inline-block;
     }
-    
+
     .footer-logo span {
       color: var(--primary);
     }
-    
+
     .footer-info {
       color: var(--text-muted);
       max-width: 600px;
       margin: 0 auto 40px;
     }
-    
+
     .copyright {
       color: rgba(255, 255, 255, 0.3);
       font-size: 0.9rem;
       padding-top: 30px;
       border-top: 1px solid rgba(255, 255, 255, 0.05);
     }
-    
+
     /* --- RESPONSIVE --- */
     @media (max-width: 992px) {
       .hero-content {
@@ -2506,30 +2438,30 @@ function getPlaceholderColor($icon_type) {
         text-align: center;
         gap: 40px;
       }
-      
+
       .hero-text h1 {
         font-size: 3.5rem;
       }
-      
+
       .typing-container {
         justify-content: center;
       }
-      
+
       .social-links {
         justify-content: center;
       }
-      
+
       .hero-description {
         margin: 0 auto 35px;
       }
-      
+
       /* FIX: MOBILE JOURNEY OVERLAP & LAYOUT */
       #education {
         height: auto !important;
         /* Mobile normal flow */
         padding-bottom: 50px;
       }
-      
+
       .education-sticky-wrapper {
         position: relative;
         height: auto;
@@ -2537,13 +2469,13 @@ function getPlaceholderColor($icon_type) {
         overflow: visible;
         display: block;
       }
-      
+
       .journey-items {
         flex-direction: column;
         gap: 50px;
         padding-top: 50px;
       }
-      
+
       .journey-line {
         width: 2px;
         height: 100%;
@@ -2553,7 +2485,7 @@ function getPlaceholderColor($icon_type) {
         background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.2) 50%, transparent 50%);
         background-size: 100% 20px;
       }
-      
+
       .journey-line-progress {
         width: 3px;
         height: 0%;
@@ -2561,32 +2493,32 @@ function getPlaceholderColor($icon_type) {
         top: 0;
         transform: none;
       }
-      
+
       .journey-firefly-container {
         right: auto;
         left: 50%;
         top: 100%;
         transform: translate(-50%, -50%);
       }
-      
+
       .firefly-glow {
         animation: fireflyMeanderMobile 2s ease-in-out infinite alternate, fireflyPulse 1s ease-in-out infinite alternate;
       }
-      
+
       @keyframes fireflyMeanderMobile {
         0% {
           transform: translate(-10px, -5px);
         }
-        
+
         50% {
           transform: translate(10px, 0px);
         }
-        
+
         100% {
           transform: translate(-10px, 5px);
         }
       }
-      
+
       .journey-item {
         display: block;
         position: relative;
@@ -2597,7 +2529,7 @@ function getPlaceholderColor($icon_type) {
         transform: none;
         filter: none;
       }
-      
+
       .journey-icon {
         position: absolute;
         left: 0;
@@ -2605,22 +2537,22 @@ function getPlaceholderColor($icon_type) {
         margin: 0;
       }
     }
-    
+
     @media (max-width: 768px) {
       nav {
         padding: 12px 20px;
       }
-      
+
       .menu-toggle {
         display: flex;
         order: 2;
         margin-left: auto;
       }
-      
+
       .logo {
         order: 1;
       }
-      
+
       .nav-links {
         position: absolute;
         top: 80px;
@@ -2639,41 +2571,41 @@ function getPlaceholderColor($icon_type) {
         opacity: 0;
         pointer-events: none;
       }
-      
+
       .nav-links.active {
         transform: scaleY(1);
         opacity: 1;
         pointer-events: all;
       }
-      
+
       .nav-links li {
         opacity: 0;
         transform: translateY(-20px);
         filter: blur(10px);
         transition: all 0.5s ease;
       }
-      
+
       .nav-links.active li:nth-child(1) {
         transition-delay: 0.1s;
         opacity: 1;
         transform: translateY(0);
         filter: blur(0);
       }
-      
+
       .nav-links.active li:nth-child(2) {
         transition-delay: 0.2s;
         opacity: 1;
         transform: translateY(0);
         filter: blur(0);
       }
-      
+
       .nav-links.active li:nth-child(3) {
         transition-delay: 0.3s;
         opacity: 1;
         transform: translateY(0);
         filter: blur(0);
       }
-      
+
       .nav-links.active li:nth-child(4) {
         transition-delay: 0.4s;
         opacity: 1;
@@ -2687,44 +2619,44 @@ function getPlaceholderColor($icon_type) {
         transform: translateY(0);
         filter: blur(0);
       }
-      
+
       .hero-text h1 {
         font-size: 2.5rem;
       }
-      
+
       .typing-container {
         font-size: 1.5rem;
       }
-      
+
       .image-wrapper {
         width: 280px;
         height: 280px;
       }
-      
+
       .section-title {
         font-size: 2.2rem;
       }
     }
-    
+
     @keyframes pulseGlow {
       0% {
         opacity: 0.5;
         transform: translate(-50%, -50%) scale(1);
       }
-      
+
       100% {
         opacity: 0.8;
         transform: translate(-50%, -50%) scale(1.1);
       }
     }
-    
+
     @keyframes blink {
-      
+
       0%,
       100% {
         opacity: 1;
       }
-      
+
       50% {
         opacity: 0;
       }
@@ -3403,14 +3335,14 @@ function getPlaceholderColor($icon_type) {
       padding: 10px 0 40px;
       position: relative;
     }
-    
+
     .guestbook-container {
       max-width: 1200px;
       margin: 0 auto;
       padding: 0 20px;
       overflow: hidden;
     }
-    
+
     .guestbook-header-row {
       display: flex;
       justify-content: space-between;
@@ -3419,7 +3351,7 @@ function getPlaceholderColor($icon_type) {
       border-bottom: 1px solid rgba(255, 255, 255, 0.05);
       padding-bottom: 15px;
     }
-    
+
     .guestbook-subtitle {
       font-size: 1.5rem;
       font-weight: 700;
@@ -3428,7 +3360,7 @@ function getPlaceholderColor($icon_type) {
       letter-spacing: 0.5px;
       position: relative;
     }
-    
+
     .guestbook-subtitle::after {
       content: '';
       position: absolute;
@@ -3439,7 +3371,7 @@ function getPlaceholderColor($icon_type) {
       background: var(--secondary);
       box-shadow: 0 0 10px rgba(188, 19, 254, 0.8);
     }
-    
+
     .guestbook-trigger-btn {
       display: inline-flex;
       align-items: center;
@@ -3456,14 +3388,14 @@ function getPlaceholderColor($icon_type) {
       transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
       box-shadow: 0 0 10px rgba(188, 19, 254, 0.1);
     }
-    
+
     .guestbook-trigger-btn:hover {
       background: var(--secondary);
       color: #fff;
       transform: translateY(-2px);
       box-shadow: 0 5px 20px rgba(188, 19, 254, 0.4);
     }
-    
+
     .guestbook-grid {
       display: flex;
       flex-wrap: nowrap;
@@ -3471,7 +3403,7 @@ function getPlaceholderColor($icon_type) {
       width: max-content;
       will-change: transform;
     }
-    
+
     .guestbook-card {
       background: linear-gradient(180deg, rgba(24,24,33,0.7), rgba(16,16,22,0.5));
       backdrop-filter: blur(16px);
@@ -3492,7 +3424,7 @@ function getPlaceholderColor($icon_type) {
       transform: translateY(-4px);
       box-shadow: 0 14px 36px rgba(0, 0, 0, 0.34);
     }
-    
+
     .guestbook-card-header {
       display: flex;
       justify-content: space-between;
@@ -3500,19 +3432,19 @@ function getPlaceholderColor($icon_type) {
       border-bottom: 1px solid rgba(255, 255, 255, 0.03);
       padding-bottom: 8px;
     }
-    
+
     .guestbook-card-info {
       display: flex;
       flex-direction: column;
       gap: 2px;
     }
-    
+
     .guestbook-card-name {
       font-size: 0.95rem;
       font-weight: 600;
       color: #fff;
     }
-    
+
     .guestbook-card-stars {
       display: flex;
       gap: 3px;
@@ -3521,21 +3453,21 @@ function getPlaceholderColor($icon_type) {
       margin-top: 2px;
       text-shadow: 0 0 6px rgba(255, 170, 0, 0.3);
     }
-    
+
     .guestbook-card-date {
       font-size: 0.75rem;
       color: var(--text-muted);
       font-family: var(--font-mono);
       margin-top: 2px;
     }
-    
+
     .guestbook-card-msg {
       font-size: 0.88rem;
       color: rgba(255, 255, 255, 0.8);
       line-height: 1.5;
       word-break: break-word;
     }
-    
+
     .guestbook-empty {
       text-align: center;
       padding: 30px;
@@ -3546,7 +3478,7 @@ function getPlaceholderColor($icon_type) {
       background: rgba(20, 20, 25, 0.2);
       width: 100%;
     }
-    
+
     /* --- GUESTBOOK MODAL OVERLAY --- */
     .guestbook-modal-overlay {
       position: fixed;
@@ -3565,12 +3497,12 @@ function getPlaceholderColor($icon_type) {
       pointer-events: none;
       transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    
+
     .guestbook-modal-overlay.active {
       opacity: 1;
       pointer-events: auto;
     }
-    
+
     .guestbook-modal-card {
       background: rgba(20, 20, 25, 0.85);
       border: 1px solid var(--glass-border);
@@ -3583,11 +3515,11 @@ function getPlaceholderColor($icon_type) {
       transform: scale(0.9) translateY(20px);
       transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    
+
     .guestbook-modal-overlay.active .guestbook-modal-card {
       transform: scale(1) translateY(0);
     }
-    
+
     .guestbook-modal-close {
       position: absolute;
       top: 20px;
@@ -3600,37 +3532,37 @@ function getPlaceholderColor($icon_type) {
       transition: color 0.3s ease;
       line-height: 1;
     }
-    
+
     .guestbook-modal-close:hover {
       color: #fff;
     }
-    
+
     .guestbook-modal-title {
       font-size: 1.4rem;
       font-weight: 700;
       color: #fff;
       margin-bottom: 8px;
     }
-    
+
     .guestbook-modal-desc {
       font-size: 0.88rem;
       color: var(--text-muted);
       margin-bottom: 25px;
     }
-    
+
     .guestbook-form-group {
       display: flex;
       flex-direction: column;
       gap: 8px;
       margin-bottom: 20px;
     }
-    
+
     .guestbook-form-group label {
       font-size: 0.85rem;
       font-weight: 600;
       color: rgba(255, 255, 255, 0.7);
     }
-    
+
     .guestbook-form-group input,
     .guestbook-form-group textarea {
       background: rgba(255, 255, 255, 0.05);
@@ -3642,7 +3574,7 @@ function getPlaceholderColor($icon_type) {
       font-size: 0.92rem;
       transition: all 0.3s ease;
     }
-    
+
     .guestbook-form-group input:focus,
     .guestbook-form-group textarea:focus {
       outline: none;
@@ -3650,31 +3582,31 @@ function getPlaceholderColor($icon_type) {
       background: rgba(255, 255, 255, 0.08);
       box-shadow: 0 0 15px rgba(188, 19, 254, 0.2);
     }
-    
+
     .guestbook-form-group textarea {
       resize: none;
       height: 110px;
     }
-    
+
     .star-rating-wrapper {
       display: flex;
       gap: 8px;
       font-size: 1.6rem;
       color: rgba(255, 255, 255, 0.2);
     }
-    
+
     .star-btn {
       cursor: pointer;
       transition: all 0.2s ease;
     }
-    
+
     .star-btn.hovered,
     .star-btn.active {
       color: #ffaa00;
       text-shadow: 0 0 10px rgba(255, 170, 0, 0.4);
       transform: scale(1.15);
     }
-    
+
     .guestbook-submit-btn {
       width: 100%;
       padding: 12px;
@@ -3688,12 +3620,12 @@ function getPlaceholderColor($icon_type) {
       transition: all 0.3s ease;
       box-shadow: 0 5px 15px rgba(188, 19, 254, 0.3);
     }
-    
+
     .guestbook-submit-btn:hover:not(:disabled) {
       transform: translateY(-2px);
       box-shadow: 0 8px 25px rgba(188, 19, 254, 0.5);
     }
-    
+
     .guestbook-submit-btn:disabled {
       background: rgba(255, 255, 255, 0.1);
       color: var(--text-muted);
@@ -3981,12 +3913,15 @@ function getPlaceholderColor($icon_type) {
       .testimonials-grid { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
+  <link rel="stylesheet" href="/portfolio.css">
+  <script src="/portfolio-ui.js" defer></script>
+  <noscript><style>#preloader{display:none}body.no-scroll{overflow:auto}[data-aos],.text-reveal-anim{opacity:1!important;transform:none!important}</style></noscript>
 </head>
 
-<body class="no-scroll">
+<body>
   <a href="#home" class="skip-link">Lewati ke konten utama</a>
   <div id="scrollProgress" aria-hidden="true"></div>
-  <div id="preloader">
+  <div id="preloader" hidden>
     <div class="preloader-particles" id="preloaderParticles"></div>
     <div class="loader-content">
       <div class="loader-text" data-text="RELV-DEV">RELV-DEV</div>
@@ -3996,16 +3931,16 @@ function getPlaceholderColor($icon_type) {
     </div>
     <div class="loader-percent" id="loaderPercent">0%</div>
   </div>
-  
+
   <div class="cursor-bulb" id="cursorBulb"></div>
   <div class="cursor-dot" id="cursorDot"></div>
   <canvas id="cursorCanvas" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9998;"></canvas>
-  
+
   <nav aria-label="Main navigation">
     <a href="https://relv.biz.id" class="logo">
       <i class="fas fa-code"></i> RelV
     </a>
-    
+
     <button class="menu-toggle" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="primaryNav">
       <span></span>
       <span></span>
@@ -4013,25 +3948,29 @@ function getPlaceholderColor($icon_type) {
     </button>
 
     <ul class="nav-links" id="primaryNav">
-      <li><a href="#home" class="active">Home</a></li>
-      <li><a href="#education">Education</a></li>
-      <li><a href="#skills">Skills</a></li>
-      <li><a href="#testimonials">Testimonials</a></li>
-      <li><a href="#gallery">Gallery</a></li>
+      <li><a href="#home" class="active">Beranda</a></li>
+      <li><a href="#featured">Karya</a></li>
+      <li><a href="#education">Perjalanan</a></li>
+      <li><a href="#skills">Keahlian</a></li>
+      <li><a href="#testimonials">Klien</a></li>
     </ul>
   </nav>
-  
+
   <section id="home" class="hero">
     <div class="hero-content">
       <div class="hero-text" data-aos="fade-right" data-aos-duration="1000">
-        <span class="hero-greeting">HELLO WORLD</span>
+        <span class="hero-greeting"><span class="availability-dot" aria-hidden="true"></span> PENGEMBANG · DESAINER</span>
         <h1>Farel Putra<br>Firmansyah</h1>
         <div class="typing-container">
-          I'm&nbsp;<span class="typing-text"></span><span class="cursor"></span>
+          Saya&nbsp;<span class="typing-text"></span><span class="cursor"></span>
         </div>
         <p class="hero-description text-reveal-anim">
-          High school student and tech enthusiast, selected as a Google Student Ambassador, with achievements in programming, cloud computing, and visual design. Passionate about innovation, leadership, and creating meaningful impact through technology and creativity.
+          Saya Farel, pengembang dan pegiat teknologi dengan pengalaman di pemrograman, cloud computing, dan desain visual. Melalui proyek, riset, dan kegiatan kepemimpinan, saya mengeksplorasi cara teknologi membantu menyelesaikan masalah.
         </p>
+        <div class="hero-actions">
+          <a class="hero-cta primary" href="#featured">Jelajahi karya <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+          <a class="hero-cta" href="mailto:contact@relv.biz.id">Hubungi saya <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
+        </div>
         <div class="social-links">
           <a href="https://www.instagram.com/zx_frl" target="_blank" class="social-btn" aria-label="Instagram">
             <i class="fab fa-instagram"></i>
@@ -4047,8 +3986,8 @@ function getPlaceholderColor($icon_type) {
           </a>
         </div>
       </div>
-      
-      <div class="hero-image-container" data-aos="fade-left" data-aos-duration="1000">
+
+      <div class="hero-image-container" data-aos="fade-left" data-aos-duration="1000"><span class="portrait-caption">KREATIVITAS &amp; TEKNOLOGI</span>
         <div class="image-wrapper">
           <div class="image-glow"></div>
           <img src="https://res.cloudinary.com/dvpq5fsef/image/upload/c_fill,g_auto,w_400,h_400,q_auto,f_auto/v1780844527/dvpyazydsd46jzrvu6bq.webp" alt="Farel Putra" class="profile-img">
@@ -4056,67 +3995,27 @@ function getPlaceholderColor($icon_type) {
       </div>
     </div>
   </section>
-  
-  <section id="education">
-    <div class="education-sticky-wrapper">
-      <div class="section-header">
-        <h2 class="section-title">My Journey</h2>
-      </div>
-      
-      <div class="education-container" id="eduContainer">
-        <div class="journey-line"></div>
-        <div class="journey-line-progress" id="journeyProgress">
-          <div class="journey-firefly-container">
-            <div class="firefly-glow"></div>
-          </div>
-        </div>
-        
-        <div class="journey-items">
-          <div class="journey-item">
-            <div class="journey-icon">
-              <i class="fas fa-microchip"></i>
-            </div>
-            <div class="journey-card" data-period="smp">
-              <span class="journey-year">2019 - 2022</span>
-              <h3>SMP Negeri 4 Pati</h3>
-              <p class="text-reveal-anim">Discovered passion for computers and basic logic.</p>
-              <span style="font-size:0.75rem;color:var(--primary);margin-top:10px;display:block;font-family:var(--font-mono);"><i class="fas fa-info-circle"></i> Click for details</span>
-            </div>
-          </div>
 
-          <div class="journey-item">
-            <div class="journey-icon">
-              <i class="fas fa-graduation-cap"></i>
-            </div>
-            <div class="journey-card" data-period="sma">
-              <span class="journey-year">2023 - Present</span>
-              <h3>SMA Negeri 3 Pati</h3>
-              <p class="text-reveal-anim">IT Coordinator, Head of SEA, and Advanced Developer, actively involved in the Student Research Club (KIR) and academic competitions.</p>
-              <span style="font-size:0.75rem;color:var(--primary);margin-top:10px;display:block;font-family:var(--font-mono);"><i class="fas fa-info-circle"></i> Click for details</span>
-            </div>
-          </div>
-
-          <div class="journey-item">
-            <div class="journey-icon">
-              <i class="fas fa-university"></i>
-            </div>
-            <div class="journey-card" data-period="unair">
-              <span class="journey-year">2026 - Present</span>
-              <h3>Universitas Airlangga</h3>
-              <p class="text-reveal-anim">Google Student Ambassador — representing Google on campus and engaging students with Google's technologies, programs, and initiatives.</p>
-              <span style="font-size:0.75rem;color:var(--primary);margin-top:10px;display:block;font-family:var(--font-mono);"><i class="fas fa-info-circle"></i> Click for details</span>
-            </div>
-          </div>
-        </div>
-      </div>
+  <section id="featured" class="featured-section">
+    <p class="section-kicker">PROYEK UNGGULAN</p><h2 class="section-title">Dari ide menjadi karya.</h2>
+    <div class="featured-projects">
+    <?php foreach (array_slice($projects, 0, 3) as $index => $project): ?>
+      <article class="featured-project">
+        <div class="featured-image"><?php if (public_url($project['image_url'] ?? '')): ?><img src="<?= htmlspecialchars(public_url($project['image_url'])) ?>" alt="<?= htmlspecialchars($project['title']) ?>" loading="lazy" width="800" height="500"><?php endif; ?></div>
+        <div><span class="section-kicker">0<?= $index + 1 ?> · <?= htmlspecialchars($project['sub_category']) ?></span><h3><?= htmlspecialchars($project['title']) ?></h3><p><?= htmlspecialchars($project['description']) ?></p>
+        <div class="hero-actions"><?php if (public_url($project['live_url'] ?? '')): ?><a class="hero-cta primary" href="<?= htmlspecialchars(public_url($project['live_url'])) ?>" target="_blank" rel="noopener noreferrer">Lihat demo ↗</a><?php endif; ?><?php if (public_url($project['github_url'] ?? '')): ?><a class="hero-cta" href="<?= htmlspecialchars(public_url($project['github_url'])) ?>" target="_blank" rel="noopener noreferrer">Kode sumber ↗</a><?php endif; ?><a class="hero-cta" href="#work-<?= (int)$project['id'] ?>">Lihat di galeri</a></div></div>
+      </article>
+    <?php endforeach; ?>
     </div>
+  <?php if (!$projects): ?><p class="data-notice">Proyek belum tersedia saat ini. <a href="/#featured">Muat ulang</a> atau kunjungi <a href="https://github.com/RelV-Dev" target="_blank" rel="noopener noreferrer">GitHub saya</a>.</p><?php endif; ?>
   </section>
-  
+
+
   <section id="skills" style="background: var(--bg-dark);">
     <div class="section-header" data-aos="fade-up">
-      <h2 class="section-title">Technical Skills</h2>
+      <h2 class="section-title">Keahlian</h2>
     </div>
-    
+
     <div class="skills-grid">
       <div class="skill-category" data-aos="fade-up" data-aos-delay="0">
         <div class="skill-header">
@@ -4170,7 +4069,7 @@ function getPlaceholderColor($icon_type) {
           </div>
         </div>
       </div>
-      
+
       <div class="skill-category" data-aos="fade-up" data-aos-delay="200">
         <div class="skill-header">
           <i class="fas fa-bezier-curve" style="color: var(--secondary);"></i>
@@ -4199,7 +4098,7 @@ function getPlaceholderColor($icon_type) {
           </div>
         </div>
       </div>
-      
+
       <div class="skill-category" data-aos="fade-up" data-aos-delay="400">
         <div class="skill-header">
           <i class="fas fa-film" style="color: var(--tertiary);"></i>
@@ -4222,27 +4121,181 @@ function getPlaceholderColor($icon_type) {
       </div>
     </div>
   </section>
-  
+
+  <section id="education">
+    <div class="education-sticky-wrapper">
+      <div class="section-header">
+        <h2 class="section-title">Perjalanan saya</h2>
+      </div>
+
+      <div class="education-container" id="eduContainer">
+        <div class="journey-line"></div>
+        <div class="journey-line-progress" id="journeyProgress">
+          <div class="journey-firefly-container">
+            <div class="firefly-glow"></div>
+          </div>
+        </div>
+
+        <div class="journey-items">
+          <div class="journey-item">
+            <div class="journey-icon">
+              <i class="fas fa-microchip"></i>
+            </div>
+            <div class="journey-card" data-period="smp">
+              <span class="journey-year">2019 - 2022</span>
+              <h3>SMP Negeri 4 Pati</h3>
+              <p class="text-reveal-anim">Mulai mendalami komputer dan dasar logika pemrograman.</p>
+              <span style="font-size:0.75rem;color:var(--primary);margin-top:10px;display:block;font-family:var(--font-mono);"><i class="fas fa-info-circle"></i> Lihat detail</span>
+            </div>
+          </div>
+
+          <div class="journey-item">
+            <div class="journey-icon">
+              <i class="fas fa-graduation-cap"></i>
+            </div>
+            <div class="journey-card" data-period="sma">
+              <span class="journey-year">2023 - Present</span>
+              <h3>SMA Negeri 3 Pati</h3>
+              <p class="text-reveal-anim">Koordinator IT dan ketua SEA, aktif dalam Karya Ilmiah Remaja (KIR), pengembangan teknologi, dan kompetisi akademik.</p>
+              <span style="font-size:0.75rem;color:var(--primary);margin-top:10px;display:block;font-family:var(--font-mono);"><i class="fas fa-info-circle"></i> Lihat detail</span>
+            </div>
+          </div>
+
+          <div class="journey-item">
+            <div class="journey-icon">
+              <i class="fas fa-university"></i>
+            </div>
+            <div class="journey-card" data-period="unair">
+              <span class="journey-year">2026 - Present</span>
+              <h3>Universitas Airlangga</h3>
+              <p class="text-reveal-anim">Google Student Ambassador — mengenalkan teknologi, program, dan inisiatif Google kepada mahasiswa.</p>
+              <span style="font-size:0.75rem;color:var(--primary);margin-top:10px;display:block;font-family:var(--font-mono);"><i class="fas fa-info-circle"></i> Lihat detail</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+
+  <section id="gallery">
+    <p class="section-kicker">PILIHAN KARYA</p>
+    <p class="section-intro">Jelajahi proyek, teknologi yang digunakan, serta pencapaian yang mendukung perjalanan saya.</p>
+    <?php if ($gallery_failed): ?><div class="data-notice" role="status">Galeri belum berhasil dimuat. <a href="/#gallery">Coba lagi</a></div><?php endif; ?>
+    <div class="section-header" data-aos="fade-up">
+      <h2 class="section-title">Karya & pencapaian</h2>
+    </div>
+
+    <div class="gallery-nav" data-aos="fade-up">
+      <button class="filter-btn active" data-filter="all">Semua</button>
+      <button class="filter-btn" data-filter="projects">Proyek</button>
+      <button class="filter-btn" data-filter="certificates">Sertifikat</button>
+      <button class="filter-btn" data-filter="awards">Prestasi</button>
+    </div>
+
+    <div class="gallery-grid">
+      <?php foreach ($gallery as $item): ?>
+        <?php if (!$item['is_visible']) continue; ?>
+        <div class="gallery-card" id="work-<?= (int)$item['id'] ?>" data-category="<?= htmlspecialchars($item['category']) ?>">
+          <div class="card-img">
+            <?php if (!empty($item['image_url'])): ?>
+              <img loading="lazy" src="<?= htmlspecialchars(public_url($item['image_url']), ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($item['title']) ?>">
+              <?php if (!empty($item['github_url']) || !empty($item['live_url']) || !empty($item['detail_url'])): ?>
+              <div class="card-overlay">
+                <?php if (!empty($item['github_url'])): ?>
+                  <a href="<?= htmlspecialchars(public_url($item['github_url']), ENT_QUOTES, 'UTF-8') ?>" class="overlay-btn" target="_blank" title="Code"><i class="fab fa-github"></i></a>
+                <?php endif; ?>
+                <?php if (!empty($item['live_url'])): ?>
+                  <a href="<?= htmlspecialchars(public_url($item['live_url']), ENT_QUOTES, 'UTF-8') ?>" class="overlay-btn" target="_blank" title="Live Demo"><i class="fas fa-link"></i></a>
+                <?php endif; ?>
+                <?php if (!empty($item['detail_url'])): ?>
+                  <?php
+                    $overlay_icon = 'fas fa-link';
+                    if ($item['category'] === 'awards') { $overlay_icon = 'fas fa-trophy'; }
+                    elseif ($item['category'] === 'certificates') { $overlay_icon = 'fas fa-certificate'; }
+                  ?>
+                  <a href="<?= htmlspecialchars(public_url($item['detail_url']), ENT_QUOTES, 'UTF-8') ?>" class="overlay-btn" target="_blank" title="View"><i class="<?= $overlay_icon ?>"></i></a>
+                <?php endif; ?>
+              </div>
+              <?php endif; ?>
+            <?php else: ?>
+              <?php
+                $p = getPlaceholderColor($item['icon_type']);
+              ?>
+              <div class="card-img-placeholder" style="height: 220px; background: linear-gradient(135deg, rgba(5, 5, 5, 0.9), <?= $p['bg'] ?>); display: flex; align-items: center; justify-content: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); position: relative;">
+                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, <?= $p['bg'] ?> 0%, transparent 70%); pointer-events: none;"></div>
+                <i class="<?= $p['icon'] ?>" style="font-size: 3.5rem; color: <?= $p['color'] ?>; filter: drop-shadow(0 0 15px <?= $p['glow'] ?>);"></i>
+                <?php if (!empty($item['github_url']) || !empty($item['live_url']) || !empty($item['detail_url'])): ?>
+                <div class="card-overlay">
+                  <?php if (!empty($item['github_url'])): ?>
+                    <a href="<?= htmlspecialchars(public_url($item['github_url']), ENT_QUOTES, 'UTF-8') ?>" class="overlay-btn" target="_blank" title="Code"><i class="fab fa-github"></i></a>
+                  <?php endif; ?>
+                  <?php if (!empty($item['live_url'])): ?>
+                    <a href="<?= htmlspecialchars(public_url($item['live_url']), ENT_QUOTES, 'UTF-8') ?>" class="overlay-btn" target="_blank" title="Live Demo"><i class="fas fa-link"></i></a>
+                  <?php endif; ?>
+                  <?php if (!empty($item['detail_url'])): ?>
+                    <?php
+                      $overlay_icon = 'fas fa-link';
+                      if ($item['category'] === 'awards') { $overlay_icon = 'fas fa-trophy'; }
+                      elseif ($item['category'] === 'certificates') { $overlay_icon = 'fas fa-certificate'; }
+                    ?>
+                    <a href="<?= htmlspecialchars(public_url($item['detail_url']), ENT_QUOTES, 'UTF-8') ?>" class="overlay-btn" target="_blank" title="View"><i class="<?= $overlay_icon ?>"></i></a>
+                  <?php endif; ?>
+                </div>
+                <?php endif; ?>
+              </div>
+            <?php endif; ?>
+          </div>
+          <div class="card-content">
+            <span class="card-category"><?= htmlspecialchars($item['sub_category']) ?></span>
+            <h3><?= htmlspecialchars($item['title']) ?></h3>
+            <p class="text-reveal-anim"><?= htmlspecialchars($item['description']) ?></p>
+          </div>
+        </div>
+      <?php endforeach; ?>
+
+        <!-- Google Student Ambassador (bukan dari DB; gambar menyusul, di-edit manual) -->
+        <div class="gallery-card" data-category="awards">
+          <div class="card-img">
+            <div class="card-img-placeholder" style="height: 220px; background: linear-gradient(135deg, rgba(5, 5, 5, 0.9), rgba(188, 19, 254, 0.1)); display: flex; align-items: center; justify-content: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); position: relative;">
+              <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, rgba(188, 19, 254, 0.1) 0%, transparent 70%); pointer-events: none;"></div>
+              <i class="fab fa-google" style="font-size: 3.5rem; color: var(--secondary); filter: drop-shadow(0 0 15px rgba(188, 19, 254, 0.5));"></i>
+            </div>
+          </div>
+          <div class="card-content">
+            <span class="card-category">Award - 2026</span>
+            <h3>Google Student Ambassador</h3>
+            <p class="text-reveal-anim">Selected as a Google Student Ambassador, representing Google at Universitas Airlangga and engaging students with Google's technologies, programs, and initiatives.</p>
+          </div>
+        </div>
+    </div>
+
+    <div class="pagination-controls" id="galleryPagination">
+      <!-- Pagination buttons injected by JS -->
+    </div>
+  </section>
+
   <section class="github-activity-section" data-aos="fade-up">
     <div class="section-header">
-      <h2 class="section-title">GitHub Activity</h2>
+      <h2 class="section-title">Aktivitas GitHub</h2>
     </div>
     <div class="github-card-container">
       <div class="github-stats-info">
         <h3><i class="fab fa-github"></i> Statistics</h3>
-        <p class="github-username" id="gh-username">@loading...</p>
-        
+        <p class="github-username" id="gh-username">@RelV-Dev</p>
+
         <div class="stat-row">
           <span class="stat-label">Total Repos</span>
-          <span class="stat-value" id="gh-repos">0</span>
+          <span class="stat-value" id="gh-repos">—</span>
         </div>
         <div class="stat-row">
           <span class="stat-label">Total Commits</span>
-          <span class="stat-value" id="gh-commits">0</span>
+          <span class="stat-value" id="gh-commits">—</span>
         </div>
         <div class="stat-row" style="border-bottom: none;">
           <span class="stat-label">Current Year</span>
-          <span class="stat-value highlight" id="gh-contributions">0</span>
+          <span class="stat-value highlight" id="gh-contributions">—</span>
         </div>
       </div>
       <div id="github-3d-canvas"></div>
@@ -4252,7 +4305,7 @@ function getPlaceholderColor($icon_type) {
   <!-- TESTIMONIALS SECTION -->
   <section id="testimonials" class="testimonial-section">
     <div class="section-header" data-aos="fade-up">
-      <h2 class="section-title">Freelance Testimonials</h2>
+      <h2 class="section-title">Pengalaman klien</h2>
     </div>
 
     <div class="testimonials-grid-container" data-aos="fade-up">
@@ -4312,10 +4365,11 @@ function getPlaceholderColor($icon_type) {
       <div class="guestbook-header-row">
         <h3 class="guestbook-subtitle">Guestbook</h3>
         <button id="openGuestbookModalBtn" class="guestbook-trigger-btn">
-          <i class="fas fa-pen-fancy"></i> Sign Guestbook
+          <i class="fas fa-pen-fancy"></i> Tulis pesan
         </button>
       </div>
-      
+
+      <button type="button" id="pauseGuestbook" class="motion-toggle" aria-pressed="false">Jeda gerakan</button>
       <div class="guestbook-grid" id="guestbookGrid">
         <!-- Messages loaded dynamically -->
       </div>
@@ -4329,10 +4383,10 @@ function getPlaceholderColor($icon_type) {
   <div class="guestbook-modal-overlay" id="guestbookModalOverlay">
     <div class="guestbook-modal-card">
       <button class="guestbook-modal-close" id="closeGuestbookModalBtn">&times;</button>
-      <h4 class="guestbook-modal-title">Sign the Guestbook</h4>
+      <h4 class="guestbook-modal-title">Tulis pesan</h4>
       <p class="guestbook-modal-desc">Tinggalkan pesan, jejak digital, atau saran Anda.</p>
-      
-      <form id="guestbookForm">
+
+      <form id="guestbookForm"><div class="honeypot" aria-hidden="true"><label>Website<input id="guestbookWebsite" tabindex="-1" autocomplete="off"></label></div>
         <div class="guestbook-form-group">
           <label for="guestbookName">Nama Anda</label>
           <input type="text" id="guestbookName" maxlength="30" required placeholder="Tulis nama Anda...">
@@ -4358,9 +4412,9 @@ function getPlaceholderColor($icon_type) {
       </form>
     </div>
   </div>
-  
+
   <div class="chat-widget-container" id="chatWidgetContainer">
-    <div class="chat-window" id="chatWindow">
+    <div class="chat-window" id="chatWindow" role="dialog" aria-label="Asisten portofolio Farel" inert>
       <div class="chat-header">
         <div class="chat-title">
           <span class="chat-name">Farel AI Assistant</span>
@@ -4378,129 +4432,42 @@ function getPlaceholderColor($icon_type) {
           </button>
         </div>
       </div>
-      
-      <div class="chat-messages" id="chatMessages">
+
+      <div class="chat-messages" id="chatMessages" role="log" aria-live="polite" aria-relevant="additions">
         <div class="message bot" id="welcomeMsg">
           <img src="https://res.cloudinary.com/dvpq5fsef/image/upload/c_fill,g_auto,w_100,h_100,q_auto,f_auto/v1780844527/dvpyazydsd46jzrvu6bq.webp" alt="Bot" class="bot-avatar">
           <div class="bot-text-content">
             Hi! 👋 Saya asisten virtual Farel.<br>
-            Silakan tanya apa saja tentang project, skill, atau pengalaman Farel!
+            Tanyakan profil, keahlian, proyek, atau kontak Farel. Jawaban saya hanya bersumber dari konten portofolio ini.
           </div>
         </div>
       </div>
-      
+
       <div class="typing-indicator" id="typingIndicator">
         <span class="typing-dot"></span>
         <span class="typing-dot"></span>
         <span class="typing-dot"></span>
       </div>
-      
+
+      <div class="chat-prompts" aria-label="Contoh pertanyaan">
+        <button type="button" data-chat-question="Apa keahlian Farel?">Keahlian</button>
+        <button type="button" data-chat-question="Apa proyek Farel?">Proyek</button>
+        <button type="button" data-chat-question="Bagaimana menghubungi Farel?">Kontak</button>
+      </div>
       <form class="chat-input-area" id="chatForm">
-        <input type="text" class="chat-input" id="chatInput" placeholder="Ketik pesan..." autocomplete="off">
-        <button type="submit" class="chat-send-btn" id="chatSendBtn">
+        <input type="text" class="chat-input" id="chatInput" aria-label="Pertanyaan tentang portofolio" maxlength="1000" placeholder="Ketik pesan..." autocomplete="off">
+        <button type="submit" class="chat-send-btn" id="chatSendBtn" aria-label="Kirim pesan">
           <i class="fas fa-paper-plane"></i>
         </button>
       </form>
     </div>
-    
-    <button class="chat-toggle-btn" id="chatToggleBtn">
+
+    <button class="chat-toggle-btn" id="chatToggleBtn" aria-label="Buka asisten portofolio" aria-controls="chatWindow" aria-expanded="false">
       <i class="fas fa-robot"></i>
     </button>
   </div>
-  
-  <section id="gallery">
-    <div class="section-header" data-aos="fade-up">
-      <h2 class="section-title">Portfolio</h2>
-    </div>
-    
-    <div class="gallery-nav" data-aos="fade-up">
-      <button class="filter-btn active" data-filter="all">All</button>
-      <button class="filter-btn" data-filter="projects">Projects</button>
-      <button class="filter-btn" data-filter="certificates">Certificates</button>
-      <button class="filter-btn" data-filter="awards">Awards</button>
-    </div>
-    
-    <div class="gallery-grid">
-      <?php foreach ($gallery as $item): ?>
-        <?php if (!$item['is_visible']) continue; ?>
-        <div class="gallery-card" data-category="<?= htmlspecialchars($item['category']) ?>">
-          <div class="card-img">
-            <?php if (!empty($item['image_url'])): ?>
-              <img loading="lazy" src="<?= htmlspecialchars($item['image_url']) ?>" alt="<?= htmlspecialchars($item['title']) ?>">
-              <?php if (!empty($item['github_url']) || !empty($item['live_url']) || !empty($item['detail_url'])): ?>
-              <div class="card-overlay">
-                <?php if (!empty($item['github_url'])): ?>
-                  <a href="<?= htmlspecialchars($item['github_url']) ?>" class="overlay-btn" target="_blank" title="Code"><i class="fab fa-github"></i></a>
-                <?php endif; ?>
-                <?php if (!empty($item['live_url'])): ?>
-                  <a href="<?= htmlspecialchars($item['live_url']) ?>" class="overlay-btn" target="_blank" title="Live Demo"><i class="fas fa-link"></i></a>
-                <?php endif; ?>
-                <?php if (!empty($item['detail_url'])): ?>
-                  <?php
-                    $overlay_icon = 'fas fa-link';
-                    if ($item['category'] === 'awards') { $overlay_icon = 'fas fa-trophy'; }
-                    elseif ($item['category'] === 'certificates') { $overlay_icon = 'fas fa-certificate'; }
-                  ?>
-                  <a href="<?= htmlspecialchars($item['detail_url']) ?>" class="overlay-btn" target="_blank" title="View"><i class="<?= $overlay_icon ?>"></i></a>
-                <?php endif; ?>
-              </div>
-              <?php endif; ?>
-            <?php else: ?>
-              <?php 
-                $p = getPlaceholderColor($item['icon_type']);
-              ?>
-              <div class="card-img-placeholder" style="height: 220px; background: linear-gradient(135deg, rgba(5, 5, 5, 0.9), <?= $p['bg'] ?>); display: flex; align-items: center; justify-content: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); position: relative;">
-                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, <?= $p['bg'] ?> 0%, transparent 70%); pointer-events: none;"></div>
-                <i class="<?= $p['icon'] ?>" style="font-size: 3.5rem; color: <?= $p['color'] ?>; filter: drop-shadow(0 0 15px <?= $p['glow'] ?>);"></i>
-                <?php if (!empty($item['github_url']) || !empty($item['live_url']) || !empty($item['detail_url'])): ?>
-                <div class="card-overlay">
-                  <?php if (!empty($item['github_url'])): ?>
-                    <a href="<?= htmlspecialchars($item['github_url']) ?>" class="overlay-btn" target="_blank" title="Code"><i class="fab fa-github"></i></a>
-                  <?php endif; ?>
-                  <?php if (!empty($item['live_url'])): ?>
-                    <a href="<?= htmlspecialchars($item['live_url']) ?>" class="overlay-btn" target="_blank" title="Live Demo"><i class="fas fa-link"></i></a>
-                  <?php endif; ?>
-                  <?php if (!empty($item['detail_url'])): ?>
-                    <?php
-                      $overlay_icon = 'fas fa-link';
-                      if ($item['category'] === 'awards') { $overlay_icon = 'fas fa-trophy'; }
-                      elseif ($item['category'] === 'certificates') { $overlay_icon = 'fas fa-certificate'; }
-                    ?>
-                    <a href="<?= htmlspecialchars($item['detail_url']) ?>" class="overlay-btn" target="_blank" title="View"><i class="<?= $overlay_icon ?>"></i></a>
-                  <?php endif; ?>
-                </div>
-                <?php endif; ?>
-              </div>
-            <?php endif; ?>
-          </div>
-          <div class="card-content">
-            <span class="card-category"><?= htmlspecialchars($item['sub_category']) ?></span>
-            <h3><?= htmlspecialchars($item['title']) ?></h3>
-            <p class="text-reveal-anim"><?= htmlspecialchars($item['description']) ?></p>
-          </div>
-        </div>
-      <?php endforeach; ?>
 
-        <!-- Google Student Ambassador (bukan dari DB; gambar menyusul, di-edit manual) -->
-        <div class="gallery-card" data-category="awards">
-          <div class="card-img">
-            <div class="card-img-placeholder" style="height: 220px; background: linear-gradient(135deg, rgba(5, 5, 5, 0.9), rgba(188, 19, 254, 0.1)); display: flex; align-items: center; justify-content: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); position: relative;">
-              <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, rgba(188, 19, 254, 0.1) 0%, transparent 70%); pointer-events: none;"></div>
-              <i class="fab fa-google" style="font-size: 3.5rem; color: var(--secondary); filter: drop-shadow(0 0 15px rgba(188, 19, 254, 0.5));"></i>
-            </div>
-          </div>
-          <div class="card-content">
-            <span class="card-category">Award - 2026</span>
-            <h3>Google Student Ambassador</h3>
-            <p class="text-reveal-anim">Selected as a Google Student Ambassador, representing Google at Universitas Airlangga and engaging students with Google's technologies, programs, and initiatives.</p>
-          </div>
-        </div>
-    </div>
 
-    <div class="pagination-controls" id="galleryPagination">
-      <!-- Pagination buttons injected by JS -->
-    </div>
-  </section>
   <!-- LIGHTBOX MODAL -->
   <div class="lightbox-overlay" id="lightboxOverlay">
     <div class="lightbox-content">
@@ -4530,15 +4497,15 @@ function getPlaceholderColor($icon_type) {
       </div>
       <div class="journey-modal-body">
         <div class="journey-modal-section">
-          <h4><i class="fa-solid fa-award"></i> Key Achievements & Roles</h4>
+          <h4><i class="fa-solid fa-award"></i> Prestasi & peran</h4>
           <ul id="journeyModalAchievements"></ul>
         </div>
         <div class="journey-modal-section" id="journeyOrgsSection" style="display:none;">
-          <h4><i class="fa-solid fa-users"></i> Organizations & Volunteer Roles</h4>
+          <h4><i class="fa-solid fa-users"></i> Organisasi & kegiatan</h4>
           <ul id="journeyModalOrgs"></ul>
         </div>
         <div class="journey-modal-section" id="journeyCertsSection">
-          <h4><i class="fa-solid fa-images"></i> Related Certificates & Proofs</h4>
+          <h4><i class="fa-solid fa-images"></i> Sertifikat & dokumentasi</h4>
           <div class="journey-modal-gallery" id="journeyModalGallery"></div>
         </div>
       </div>
@@ -4550,102 +4517,42 @@ function getPlaceholderColor($icon_type) {
     <img src="" alt="Full size preview" id="fullImgSrc">
   </div>
 
+  <section id="contact" class="contact-section">
+    <p class="section-kicker">MARI TERHUBUNG</p><h2>Punya ide untuk diwujudkan?</h2>
+    <p>Diskusikan proyek, kolaborasi, atau pertanyaan tentang karya saya.</p>
+    <div class="hero-actions"><a class="hero-cta primary" href="mailto:contact@relv.biz.id">Kirim email <span aria-hidden="true">↗</span></a><a class="hero-cta" href="https://github.com/RelV-Dev" target="_blank" rel="noopener noreferrer">Lihat GitHub</a></div>
+  </section>
   <footer>
     <div class="footer-content">
       <a href="#" class="footer-logo">Rel<span>V</span></a>
       <p class="footer-info">
         Pati, Jawa Tengah, Indonesia<br>
-        Integrating Code, Creativity, and Connectivity.
+        Menghubungkan kode, kreativitas, dan kolaborasi.
       </p>
       <div class="copyright">
-        &copy; 2025 Farel Putra Firmansyah. All rights reserved.
+        &copy; <?= date("Y") ?> Farel Putra Firmansyah. All rights reserved.
       </div>
     </div>
   </footer>
-  
+
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js" defer></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       // Init AOS with custom settings
-    AOS.init({
+    if (window.AOS) AOS.init({
       duration: 800,
       easing: 'ease-out-cubic',
       once: true,
       offset: 50
     });
-    
+
     // --- 1. PRELOADER LOGIC (PREMIUM WITH PARTICLES & PROGRESS) ---
-    (function initPreloader() {
-      const preloader = document.getElementById('preloader');
-      const loaderBar = document.getElementById('loaderBar');
-      const loaderPercent = document.getElementById('loaderPercent');
-      const particlesContainer = document.getElementById('preloaderParticles');
-      const body = document.body;
+    document.getElementById('preloader')?.remove();
+    document.body.classList.remove('no-scroll');
 
-      // Generate floating particles
-      for (let i = 0; i < 20; i++) {
-        const p = document.createElement('div');
-        p.className = 'preloader-particle';
-        p.style.left = Math.random() * 100 + '%';
-        p.style.animationDelay = Math.random() * 3 + 's';
-        p.style.animationDuration = (2 + Math.random() * 2) + 's';
-        p.style.width = p.style.height = (1 + Math.random() * 3) + 'px';
-        particlesContainer.appendChild(p);
-      }
-
-      // Simulated progress that syncs with actual page load
-      let progress = 0;
-      let targetProgress = 30; // Start with 30% from DOM
-      let isDone = false;
-
-      function updateProgress() {
-        if (isDone) return;
-        progress += (targetProgress - progress) * 0.1;
-        const rounded = Math.min(Math.round(progress), 100);
-        loaderBar.style.width = rounded + '%';
-        loaderPercent.textContent = rounded + '%';
-
-        if (rounded >= 100) {
-          isDone = true;
-          setTimeout(dismissPreloader, 200);
-          return;
-        }
-        requestAnimationFrame(updateProgress);
-      }
-
-      function dismissPreloader() {
-        preloader.classList.add('slide-up');
-        body.classList.remove('no-scroll');
-        setTimeout(() => {
-          preloader.style.display = 'none';
-          initGithub3D();
-        }, 600);
-      }
-
-      // Start progress animation
-      requestAnimationFrame(updateProgress);
-
-      // Bump progress on DOMContentLoaded
-      document.addEventListener('DOMContentLoaded', () => {
-        targetProgress = 70;
-      });
-
-      // Bump to 100% on full window load
-      window.addEventListener('load', () => {
-        targetProgress = 100;
-      });
-
-      // Safety fallback: dismiss after 3s max
-      setTimeout(() => {
-        if (!isDone) {
-          targetProgress = 100;
-        }
-      }, 3000);
-    })();
-    
-    //BOT AI
-    document.addEventListener('DOMContentLoaded', () => {
+    // Initialize immediately: the enclosing callback already runs on DOMContentLoaded.
+    (() => {
       // UI Elements
       const chatWidget = document.getElementById('chatWidgetContainer');
       const chatWindow = document.getElementById('chatWindow');
@@ -4659,38 +4566,44 @@ function getPlaceholderColor($icon_type) {
       const typingIndicator = document.getElementById('typingIndicator');
       const statusText = document.getElementById('statusText');
       const statusDot = document.getElementById('statusDot');
-      
+
       // Config
-      const API_URL = "https://chat-asis-api.vercel.app/api/chat";
-      const API_STATUS_URL = "https://chat-asis-api.vercel.app/api/chat";
-      const STORAGE_KEY = 'chatHistory';
+      const API_URL = "/api/chat.php";
+      const API_STATUS_URL = "/api/chat.php";
+      const STORAGE_KEY = 'portfolioChatV2';
+      let previousSourceIds = [];
+      let previousQuestion = '';
       const EXPIRY_TIME = 10 * 60 * 1000; // 10 Menit
-      
+
       // --- 0. INTRO & STATUS ---
       setTimeout(() => {
         chatWidget.classList.add('show-widget');
         checkApiStatus();
       }, 3000);
-      
+
       async function checkApiStatus() {
         try {
           const response = await fetch(API_STATUS_URL, { method: 'GET' });
           const data = await response.json();
-          if (data.message) {
-            statusText.innerText = "Online";
+          if (response.ok && data.ready) {
+            statusText.innerText = "Siap dicoba";
             statusDot.classList.add('online');
             chatInput.placeholder = "AI Ready. Ketik pesan...";
           } else { throw new Error(); }
         } catch (e) {
-          statusText.innerText = "Offline";
+          statusText.innerText = "Belum tersedia";
           statusDot.classList.remove('online');
           statusDot.style.background = "#ff4757";
         }
       }
-      
+
       // --- 1. TOGGLE CHAT ---
       function toggleChat() {
         chatWindow.classList.toggle('active');
+        const open = chatWindow.classList.contains('active');
+        chatWindow.inert = !open;
+        chatToggleBtn.setAttribute('aria-expanded', String(open));
+        if (!open) chatToggleBtn.focus();
         if (chatWindow.classList.contains('active')) {
           setTimeout(() => {
             chatInput.focus();
@@ -4699,38 +4612,33 @@ function getPlaceholderColor($icon_type) {
         }
       }
       chatToggleBtn.addEventListener('click', toggleChat);
+      document.addEventListener('keydown', e => { if (e.key === 'Escape' && chatWindow.classList.contains('active')) toggleChat(); });
       chatCloseBtn.addEventListener('click', toggleChat);
       newChatBtn.addEventListener('click', () => {
         newChatBtn.style.transform = "rotate(180deg)";
         setTimeout(() => newChatBtn.style.transform = "rotate(0)", 300);
         clearHistory();
       });
-      
+
       // --- 2. HISTORY ---
+      function readHistory() {
+        try {
+          const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+          if (!data || !Number.isFinite(data.timestamp) || Date.now() - data.timestamp > EXPIRY_TIME || !Array.isArray(data.messages)) return [];
+          return data.messages.filter(m => m && ['user','bot'].includes(m.sender) && typeof m.text === 'string').slice(-50);
+        } catch { return []; }
+      }
       function loadHistory() {
-        const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY));
-        if (!savedData) return;
-        if (Date.now() - savedData.timestamp > EXPIRY_TIME) {
-          localStorage.removeItem(STORAGE_KEY);
-          return;
-        }
-        if (savedData.messages.length > 0) {
-          document.getElementById('welcomeMsg')?.remove();
-          savedData.messages.forEach(msg => appendMessageUI(msg.sender, msg.text, false));
-        }
+        const messages = readHistory();
+        if (messages.length) document.getElementById('welcomeMsg')?.remove();
+        messages.forEach(msg => appendMessageUI(msg.sender, msg.text, false));
       }
-      
       function saveHistory(sender, text) {
-        let currentData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { messages: [], timestamp: Date.now() };
-        if (!localStorage.getItem(STORAGE_KEY)) currentData = { messages: [], timestamp: Date.now() };
-        currentData.messages.push({ sender, text });
-        currentData.timestamp = Date.now();
-        if (currentData.messages.length > 50) currentData.messages.shift();
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(currentData));
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify({timestamp: Date.now(), messages: [...readHistory(), {sender, text}].slice(-50)})); } catch {}
       }
-      
       function clearHistory() {
-        localStorage.removeItem(STORAGE_KEY);
+        previousSourceIds=[]; previousQuestion='';
+        try { localStorage.removeItem(STORAGE_KEY); } catch {}
         chatMessages.innerHTML = `
         <div class="message bot" id="welcomeMsg">
             <img src="https://res.cloudinary.com/dvpq5fsef/image/upload/c_fill,g_auto,w_100,h_100,q_auto,f_auto/v1780844527/dvpyazydsd46jzrvu6bq.webp" alt="Bot" class="bot-avatar">
@@ -4738,90 +4646,41 @@ function getPlaceholderColor($icon_type) {
         </div>`;
       }
       loadHistory();
-      
+
       // --- 3. ADVANCED FORMATTER (AUTO-CHIP) ---
       function formatText(text) {
-        if (!text) return "";
-        
-        // 1. Sanitasi HTML
-        let clean = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        
-        // 2. Format Markdown Links [Label](Url) -> Chip
-        clean = clean.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, label, url) => {
-          return `<a href="${url}" target="_blank" class="md-link-chip">${label}</a>`;
-        });
-        
-        // 3. Format Email Addresses -> Chip
-        clean = clean.replace(/\b([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)\b/g, (match) => {
-          return `<a href="mailto:${match}" class="md-link-chip email">Send Email</a>`;
-        });
-        
-        // 4. Format Phone Numbers (+62...) -> Chip
-        // Deteksi format +62 8xx atau +628xx
-        clean = clean.replace(/(\+62\s?[\d-]{9,})/g, (match) => {
-          const cleanPhone = match.replace(/\s/g, ''); // Hapus spasi untuk href
-          return `<a href="tel:${cleanPhone}" class="md-link-chip phone">Call</a>`;
-        });
-        
-        // 5. Format Raw URLs (https://...) -> Chip (Smart Labeling)
-        // Regex ini mencari http/https yang BELUM menjadi tag <a> (lookbehind alternative logic)
-        clean = clean.replace(/(?<!href=")(https?:\/\/[^\s<]+)/g, (url) => {
-          let label = "Visit Link";
-          
-          // Auto-Labeling berdasarkan domain
-          if (url.includes('github.com')) label = "GitHub";
-          else if (url.includes('linkedin.com')) label = "LinkedIn";
-          else if (url.includes('instagram.com')) label = "Instagram";
-          else if (url.includes('wa.me') || url.includes('whatsapp')) label = "WhatsApp";
-          else if (url.includes('vercel.app')) label = "Live Demo";
-          else if (url.includes(window.location.hostname)) label = "Home";
-          else label = "Visit Website"; // Default
-          
-          return `<a href="${url}" target="_blank" class="md-link-chip">${label}</a>`;
-        });
-        
-        // 6. Format Bold **text**
-        clean = clean.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        
-        // 7. Line Break & List Handling
-        const lines = clean.split('\n');
-        let html = '';
-        
-        lines.forEach(line => {
-          let t = line.trim();
-          if (!t) { html += '<br>'; return; }
-          
-          // Headings
-          if (t.startsWith('# ')) {
-            html += `<span class="md-heading">${t.substring(2)}</span>`;
-          }
-          // Lists
-          else if (t.startsWith('* ') || t.startsWith('- ') || t.startsWith('• ')) {
-            // Hapus simbol list karena kita pakai styling sendiri
-            const content = t.replace(/^[*•-]\s+/, '');
-            html += `<div class="md-list-item"><span class="md-bullet">•</span><span>${content}</span></div>`;
-          }
-          // Numbered Lists
-          else if (/^\d+\.\s/.test(t)) {
-            const num = t.match(/^\d+\./)[0];
-            const content = t.replace(/^\d+\.\s/, '');
-            html += `<div class="md-list-item"><span class="md-bullet" style="color:var(--primary)">${num}</span><span>${content}</span></div>`;
-          }
-          // Normal Paragraph
-          else {
-            html += `<span class="md-paragraph">${t}</span>`;
-          }
-        });
-        return html;
+        const content = document.createElement('div');
+        content.textContent = text;
+        return content.innerHTML;
       }
-      
+      function appendSources(sources) {
+        const message = chatMessages.lastElementChild?.querySelector('.bot-text-content');
+        if (!message || !Array.isArray(sources)) return;
+        const links = document.createElement('div');
+        links.className = 'chat-sources';
+        for (const source of sources) {
+          if (!/^#(?:home|education|skills|gallery|work-\d+)$/.test(source.url)) continue;
+          const link = document.createElement('a');
+          link.href = source.url;
+          link.textContent = source.title;
+          link.className = 'md-link-chip';
+          link.addEventListener('click', toggleChat);
+          links.appendChild(link);
+        }
+        message.appendChild(links);
+        scrollToBottom();
+      }
+      document.querySelectorAll('[data-chat-question]').forEach(button => button.addEventListener('click', () => {
+        chatInput.value = button.dataset.chatQuestion;
+        chatForm.requestSubmit();
+      }));
       // --- 4. UI HELPERS ---
       function appendMessageUI(sender, text, save = true) {
         if (sender === 'user' && document.getElementById('welcomeMsg')) document.getElementById('welcomeMsg').remove();
-        
+
         const msgDiv = document.createElement('div');
         msgDiv.classList.add('message', sender);
-        
+
         if (sender === 'user') {
           msgDiv.textContent = text;
         } else {
@@ -4833,48 +4692,59 @@ function getPlaceholderColor($icon_type) {
         scrollToBottom();
         if (save) saveHistory(sender, text);
       }
-      
+
       function scrollToBottom() { chatMessages.scrollTop = chatMessages.scrollHeight; }
-      
+
       // --- 5. SUBMIT HANDLER ---
       chatForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const text = chatInput.value.trim();
-        if (!text) return;
-        
+        if (!text || chatSendBtn.disabled) return;
+
         appendMessageUI('user', text);
         chatInput.value = '';
-        
+
         // Animasi
         chatSendBtn.classList.add('flying');
         chatSendBtn.disabled = true;
+        newChatBtn.disabled = true;
+        chatMessages.setAttribute('aria-busy', 'true');
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 35000);
         typingIndicator.classList.add('active');
         scrollToBottom();
-        
+
         setTimeout(() => { chatSendBtn.classList.remove('flying'); }, 800);
-        
+
         try {
           const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: text })
+            body: JSON.stringify({ message: text, previous_source_ids: previousSourceIds, previous_question: previousQuestion }),
+            signal: controller.signal
           });
           const data = await response.json();
-          
+
           typingIndicator.classList.remove('active');
-          if (data.answer) appendMessageUI('bot', data.answer);
+          if (!response.ok) throw new Error(data.error || 'Assistant sedang tidak tersedia.');
+          if (data.answer) { previousSourceIds=data.source_ids || []; previousQuestion=text; appendMessageUI('bot', data.answer); appendSources(data.sources); if(data.provider_verified) { statusText.textContent='Terhubung'; statusDot.classList.add('online'); } }
           else appendMessageUI('bot', "Maaf, server sedang sibuk.");
-          
+
         } catch (err) {
+          statusText.textContent='Gangguan koneksi'; statusDot.classList.remove('online');
           typingIndicator.classList.remove('active');
-          appendMessageUI('bot', "⚠️ Gagal terhubung ke server.");
+          appendMessageUI('bot', err.name === 'AbortError' ? 'Waktu tunggu habis. Silakan coba lagi.' : (err.message || 'Gagal terhubung ke server.'), false);
         } finally {
+          clearTimeout(timeout);
+          typingIndicator.classList.remove('active');
+          chatMessages.setAttribute('aria-busy', 'false');
+          newChatBtn.disabled = false;
           chatSendBtn.disabled = false;
-          chatInput.focus();
+          if (chatWindow.classList.contains('active')) chatInput.focus();
         }
       });
-    });
-    
+    })();
+
     // Scroll progress + nav scrolled state + hero parallax + reveal observer
     (function initPolishMotion(){
       const bar = document.getElementById('scrollProgress');
@@ -4952,10 +4822,10 @@ function getPlaceholderColor($icon_type) {
     })();
 
     // --- Typing Animation (Smooth Character-by-Character with CSS) ---
-    const words = ["Tech Enthusiast", "Developer", "Visual Designer", "Google Student Ambassador"];
+    const words = ["Pegiat teknologi", "Pengembang", "Desainer visual", "Google Student Ambassador"];
     let wordIndex = 0;
     const typingEl = document.querySelector('.typing-text');
-    
+
     function typeWord(word, callback) {
       typingEl.innerHTML = '';
       const chars = word.split('');
@@ -5004,13 +4874,15 @@ function getPlaceholderColor($icon_type) {
       typeWord(words[wordIndex], () => {
         deleteWord(() => {
           wordIndex = (wordIndex + 1) % words.length;
-          typingLoop();
+          if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) typingEl.textContent = words[0];
+          else typingLoop();
         });
       });
     }
 
-    typingLoop();
-    
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) typingEl.textContent = words[0];
+    else typingLoop();
+
     // --- Navbar Logic (accessible + anim-safe) ---
     const menuToggle = document.querySelector('.menu-toggle');
     const navLinks = document.querySelector('.nav-links');
@@ -5031,6 +4903,7 @@ function getPlaceholderColor($icon_type) {
         if(!document.getElementById('journeyModal') || document.getElementById('journeyModal').hidden) document.body.style.overflow = '';
       }
     }
+    window.addEventListener('resize', () => { if (window.innerWidth > 992 && navLinks.classList.contains('active')) setMenu(false); });
     menuToggle.addEventListener('click', () => setMenu(!navLinks.classList.contains('active')));
     document.querySelectorAll('.nav-links a').forEach(link => {
       link.addEventListener('click', () => setMenu(false));
@@ -5041,7 +4914,7 @@ function getPlaceholderColor($icon_type) {
     document.addEventListener('click', (e)=>{
       if(navLinks.classList.contains('active') && !navLinks.contains(e.target) && !menuToggle.contains(e.target)) setMenu(false);
     });
-    
+
     // --- SCROLL LOGIC & FIREFLY ANIMATION (REVISED: ULTRA SMOOTH LERP) ---
     const revealObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
@@ -5050,32 +4923,33 @@ function getPlaceholderColor($icon_type) {
         }
       });
     }, { threshold: 0.1 });
-    
+
     document.querySelectorAll('.text-reveal-anim').forEach(el => {
       revealObserver.observe(el);
     });
-    
+
     // 3. Journey Sticky Scroll Logic (SMOOTH & SLOW)
     const eduSection = document.getElementById('education');
     const journeyProgress = document.getElementById('journeyProgress');
     const journeyItems = document.querySelectorAll('.journey-item');
-    
+
     // Variabel untuk Linear Interpolation (Lerp)
     let targetProgress = 0;
     let currentProgress = 0;
     let currentProgressPx = 0;
     let isScrolling = false;
-    
+
     // Fungsi Lerp sederhana
     function lerp(start, end, factor) {
       return start + (end - start) * factor;
     }
-    
+
     // Loop animasi RequestAnimationFrame agar gerakan firefly halus (tidak patah-patah)
     function animateScroll() {
+      if (document.hidden || eduSection.getBoundingClientRect().bottom < 0 || eduSection.getBoundingClientRect().top > innerHeight) { requestAnimationFrame(animateScroll); return; }
       const isMobile = window.innerWidth <= 992;
       const eduContainer = document.getElementById('eduContainer');
-      
+
       let activeIndex = -1;
       if (isMobile) {
         // Mobile: snap to icon based on viewport position
@@ -5096,7 +4970,7 @@ function getPlaceholderColor($icon_type) {
           }
         });
       }
-      
+
       // Calculate target pixels
       let targetProgressPx = 0;
       if (activeIndex >= 0 && activeIndex < journeyItems.length) {
@@ -5114,10 +4988,10 @@ function getPlaceholderColor($icon_type) {
           }
         }
       }
-      
+
       // Smooth interpolation using lerp
       currentProgressPx = lerp(currentProgressPx, targetProgressPx, 0.08);
-      
+
       if (isMobile) {
         journeyProgress.style.width = '3px';
         journeyProgress.style.height = currentProgressPx.toFixed(2) + 'px';
@@ -5125,7 +4999,7 @@ function getPlaceholderColor($icon_type) {
         journeyProgress.style.height = '3px';
         journeyProgress.style.width = currentProgressPx.toFixed(2) + 'px';
       }
-      
+
       // Update active state and visibility of items
       journeyItems.forEach((item, index) => {
         if (index <= activeIndex) {
@@ -5135,13 +5009,13 @@ function getPlaceholderColor($icon_type) {
           item.classList.remove('active');
         }
       });
-      
+
       requestAnimationFrame(animateScroll);
     }
-    
+
     // Jalankan loop animasi
     animateScroll();
-    
+
     // Event Scroll hanya bertugas menghitung TARGET, bukan mengubah CSS langsung
     window.addEventListener('scroll', () => {
       // Navbar Logic
@@ -5149,42 +5023,42 @@ function getPlaceholderColor($icon_type) {
       const sections = document.querySelectorAll('section');
       const scrollY = window.scrollY;
       const windowHeight = window.innerHeight;
-      
+
       sections.forEach(section => {
         const sectionTop = section.offsetTop;
         const isMobile = window.innerWidth <= 992;
         // Logika height untuk section sticky
         const sectionHeight = (section.getAttribute('id') === 'education' && !isMobile) ? windowHeight : section.clientHeight;
-        
+
         if (scrollY >= (sectionTop - 200)) {
           current = section.getAttribute('id');
         }
       });
-      
+
       document.querySelectorAll('.nav-links a').forEach(a => {
         a.classList.remove('active');
         if (a.getAttribute('href').includes(current)) {
           a.classList.add('active');
         }
       });
-      
+
       // Hitung Target Progress untuk Firefly
       const sectionTop = eduSection.offsetTop;
       const sectionTotalHeight = eduSection.offsetHeight;
-      
+
       let scrollableDistance = sectionTotalHeight - windowHeight;
       if (scrollableDistance <= 0) scrollableDistance = 1;
-      
+
       let percent = (scrollY - sectionTop) / scrollableDistance;
-      
+
       // Clamp value 0-1
       if (percent < 0) percent = 0;
       if (percent > 1) percent = 1;
-      
+
       // Set target untuk diambil alih oleh fungsi animateScroll()
       targetProgress = percent;
     });
-    
+
     // --- Custom Cursor & Canvas Particle Engine (throttled + respects reduced-motion) ---
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const cursorBulb = document.getElementById('cursorBulb');
@@ -5192,19 +5066,19 @@ function getPlaceholderColor($icon_type) {
     const cursorCanvas = document.getElementById('cursorCanvas');
     const ctx = cursorCanvas.getContext('2d');
     let particles = [];
-    
+
     let mouseX = 0;
     let mouseY = 0;
     let bulbX = 0;
     let bulbY = 0;
-    
+
     function resizeCanvas() {
       cursorCanvas.width = window.innerWidth;
       cursorCanvas.height = window.innerHeight;
     }
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
-    
+
     class Particle {
       constructor(x, y, color) {
         this.x = x;
@@ -5216,7 +5090,7 @@ function getPlaceholderColor($icon_type) {
         this.alpha = 1;
         this.decay = Math.random() * 0.015 + 0.01;
       }
-      
+
       update() {
         this.x += this.speedX;
         this.y += this.speedY;
@@ -5224,7 +5098,7 @@ function getPlaceholderColor($icon_type) {
         this.speedY *= 0.98;
         this.alpha -= this.decay;
       }
-      
+
       draw() {
         ctx.save();
         ctx.globalAlpha = this.alpha;
@@ -5237,7 +5111,7 @@ function getPlaceholderColor($icon_type) {
         ctx.restore();
       }
     }
-    
+
     function createBurst(x, y) {
       const colors = ['#00f3ff', '#bc13fe', '#00ff9d', '#ff007c', '#ccff00'];
       const count = 15;
@@ -5246,14 +5120,14 @@ function getPlaceholderColor($icon_type) {
         particles.push(new Particle(x, y, randomColor));
       }
     }
-    
+
     document.addEventListener('mousemove', (e) => {
       mouseX = e.clientX;
       mouseY = e.clientY;
-      
+
       cursorDot.style.left = mouseX + 'px';
       cursorDot.style.top = mouseY + 'px';
-      
+
       // Spawn low probability trail
       if (Math.random() < 0.15) {
         const colors = ['#00f3ff', '#bc13fe', '#00ff9d'];
@@ -5261,26 +5135,26 @@ function getPlaceholderColor($icon_type) {
         particles.push(new Particle(mouseX, mouseY, randomColor));
       }
     });
-    
+
     document.addEventListener('mousedown', (e) => {
       cursorDot.style.transform = 'translate(-50%, -50%) scale(0.6)';
       cursorBulb.style.opacity = '0.35';
       createBurst(e.clientX, e.clientY);
     });
-    
+
     document.addEventListener('mouseup', () => {
       cursorDot.style.transform = 'translate(-50%, -50%) scale(1)';
       cursorBulb.style.opacity = '0.15';
     });
-    
+
     function animateCursor() {
       const easing = 0.1;
       bulbX += (mouseX - bulbX) * easing;
       bulbY += (mouseY - bulbY) * easing;
-      
+
       cursorBulb.style.left = bulbX + 'px';
       cursorBulb.style.top = bulbY + 'px';
-      
+
       // Render particles on Canvas
       ctx.clearRect(0, 0, cursorCanvas.width, cursorCanvas.height);
       for (let i = particles.length - 1; i >= 0; i--) {
@@ -5291,17 +5165,17 @@ function getPlaceholderColor($icon_type) {
           particles[i].draw();
         }
       }
-      
+
       requestAnimationFrame(animateCursor);
     }
 
     // Skip cursor particle loop entirely saat user prefer reduced motion
-    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (window.matchMedia('(hover: hover) and (pointer: fine)').matches && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       animateCursor();
     }
-    
+
     const clickableElements = document.querySelectorAll('a, button, .journey-card, .skill-category, .gallery-card, input, textarea');
-    
+
     clickableElements.forEach(el => {
       el.addEventListener('mouseenter', () => {
         cursorDot.classList.add('active-hover');
@@ -5310,7 +5184,7 @@ function getPlaceholderColor($icon_type) {
         cursorDot.classList.remove('active-hover');
       });
     });
-    
+
     // --- Gallery Filter + Pagination (with refined animation timing) ---
     const filterBtns = document.querySelectorAll('.filter-btn');
     const galleryItems = document.querySelectorAll('.gallery-card');
@@ -5328,7 +5202,7 @@ function getPlaceholderColor($icon_type) {
       const filtered = getFilteredItems();
       const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
       const container = document.getElementById('galleryPagination');
-      
+
       if (totalPages <= 1) {
         container.innerHTML = '';
         return;
@@ -5344,7 +5218,7 @@ function getPlaceholderColor($icon_type) {
       startPage = Math.max(1, endPage - maxVisible + 1);
 
       let html = `<button class="pagination-btn nav-arrow ${currentPage === 1 ? 'disabled' : ''}" data-page="prev" aria-label="Previous"><i class="fas fa-chevron-left"></i></button>`;
-      
+
       // First page + ellipsis
       if (startPage > 1) {
         html += `<button class="pagination-btn" data-page="1">1</button>`;
@@ -5354,7 +5228,7 @@ function getPlaceholderColor($icon_type) {
       for (let i = startPage; i <= endPage; i++) {
         html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
       }
-      
+
       // Last page + ellipsis
       if (endPage < totalPages) {
         if (endPage < totalPages - 1) html += `<span class="pagination-info">…</span>`;
@@ -5362,9 +5236,9 @@ function getPlaceholderColor($icon_type) {
       }
 
       html += `<button class="pagination-btn nav-arrow ${currentPage === totalPages ? 'disabled' : ''}" data-page="next" aria-label="Next"><i class="fas fa-chevron-right"></i></button>`;
-      
+
       container.innerHTML = html;
-      
+
       container.querySelectorAll('.pagination-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const page = btn.getAttribute('data-page');
@@ -5410,8 +5284,16 @@ function getPlaceholderColor($icon_type) {
       });
     });
 
-    // Initial render
-    showPage();
+    function revealLinkedWork() {
+      if (!/^#work-\d+$/.test(location.hash)) return;
+      const index = Array.from(galleryItems).findIndex(item => '#'+item.id === location.hash);
+      if (index < 0) return;
+      currentFilter='all'; currentPage=Math.floor(index / ITEMS_PER_PAGE)+1;
+      filterBtns.forEach(btn=>btn.classList.toggle('active',btn.dataset.filter==='all'));
+      showPage(); requestAnimationFrame(()=>document.getElementById(location.hash.slice(1))?.scrollIntoView({block:'center'}));
+    }
+    window.addEventListener('hashchange', revealLinkedWork);
+    showPage(); revealLinkedWork();
 
     // --- TESTIMONIALS: Supabase + Paginated Grid ---
     const SUPABASE_URL = 'https://srkisngeashoaeiwazcr.supabase.co';
@@ -5419,7 +5301,7 @@ function getPlaceholderColor($icon_type) {
 
     // Singleton Supabase Client - prevents "Multiple GoTrueClient instances" warning
     const supabaseClient = (SUPABASE_URL !== 'YOUR_SUPABASE_URL')
-      ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      ? window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
       : null;
 
     let allTestimonials = [];
@@ -5447,13 +5329,13 @@ function getPlaceholderColor($icon_type) {
     }
 
     async function loadTestimonials() {
+      document.getElementById('testimonialEmpty').textContent = 'Belum ada pengalaman klien yang dipublikasikan.';
       try {
         const supabase = supabaseClient;
         const { data, error } = await supabase
-          .from('testimonials')
-          .select('*')
-          .eq('is_visible', true)
-          .order('transaction_date', { ascending: false });
+          .from('public_testimonials')
+          .select('id,customer_name,project_title,category,project_link,demo_video_url,project_proof')
+          .order('id', { ascending: false });
 
         if (error) throw error;
 
@@ -5476,7 +5358,7 @@ function getPlaceholderColor($icon_type) {
         console.warn('Testimonials load failed:', err.message);
         const emptyState = document.getElementById('testimonialEmpty');
         const gridContainer = document.querySelector('.testimonials-grid-container');
-        if (emptyState) emptyState.style.display = 'block';
+        if (emptyState) { emptyState.style.display = 'block'; emptyState.replaceChildren(document.createTextNode('Testimonial gagal dimuat. ')); const retry=document.createElement('button'); retry.textContent='Coba lagi'; retry.onclick=loadTestimonials; emptyState.appendChild(retry); }
         if (gridContainer) gridContainer.style.display = 'none';
       }
     }
@@ -5494,25 +5376,23 @@ function getPlaceholderColor($icon_type) {
         const catColor = getCategoryColor(t.category);
         const card = document.createElement('div');
         card.className = 'testimonial-card';
-        card.setAttribute('data-testimonial', JSON.stringify(t).replace(/'/g, "&#39;"));
+        card.testimonialData = t;
         card.style.animationDelay = `${index * 0.1}s`;
 
         card.innerHTML = `
           <div class="testimonial-img-wrapper">
-            <img src="${t.project_proof}" alt="${t.project_title} - Project proof" loading="lazy">
+            <img src="${escapeHtml(safeUrl(t.project_proof) || fallbackImage)}" alt="${escapeHtml(t.project_title)} - Project proof" loading="lazy">
             <div class="testimonial-img-overlay">
-              <span class="testimonial-category-badge" style="background:${catColor.bg};color:${catColor.color};border-color:${catColor.border}">${t.category}</span>
+              <span class="testimonial-category-badge" style="background:${catColor.bg};color:${catColor.color};border-color:${catColor.border}">${escapeHtml(t.category)}</span>
             </div>
           </div>
           <div class="testimonial-card-body">
-            <span class="testimonial-customer"><i class="fas fa-user"></i> ${t.customer_name}</span>
-            <h3 class="testimonial-title">${t.project_title}</h3>
+            <span class="testimonial-customer"><i class="fas fa-user"></i> ${escapeHtml(t.customer_name)}</span>
+            <h3 class="testimonial-title">${escapeHtml(t.project_title)}</h3>
             <div class="testimonial-meta">
-              <span class="testimonial-price">${formatRupiah(t.price)}</span>
-              <span class="testimonial-date"><i class="far fa-calendar"></i> ${formatDate(t.transaction_date)}</span>
             </div>
             <button class="testimonial-view-btn" onclick="openLightbox(this.closest('.testimonial-card'))">
-              <i class="fas fa-eye"></i> View Details
+              <i class="fas fa-eye"></i> Lihat detail
             </button>
           </div>
         `;
@@ -5607,6 +5487,9 @@ function getPlaceholderColor($icon_type) {
     }
 
 
+    const fallbackImage = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><rect width="640" height="360" fill="#141d28"/><text x="50%" y="50%" text-anchor="middle" fill="#9adfd8" font-size="24">RelV · Proyek</text></svg>');
+    function safeUrl(value) { try { const u = new URL(value); return ['https:', 'http:'].includes(u.protocol) ? u.href : ''; } catch { return ''; } }
+    document.addEventListener('click', event => { const target = event.target.closest('[data-full-image]'); if (target) openFullImg(target.dataset.fullImage); });
     // --- GUESTBOOK: Supabase Realtime/Fetch & Cooldown ---
     let allGuestbookMessages = [];
     const GUESTBOOK_COOLDOWN_MS = 60 * 1000; // 1 minute
@@ -5676,12 +5559,12 @@ function getPlaceholderColor($icon_type) {
         gap: 10px;
         pointer-events: auto;
       `;
-      
-      const icon = type === 'success' 
-        ? '<i class="fas fa-check-circle" style="color: #00ff9d;"></i>' 
+
+      const icon = type === 'success'
+        ? '<i class="fas fa-check-circle" style="color: #00ff9d;"></i>'
         : '<i class="fas fa-exclamation-circle" style="color: #ff4444;"></i>';
-      
-      toast.innerHTML = `${icon} <span>${message}</span>`;
+
+      toast.innerHTML = `${icon} <span>${escapeHtml(message)}</span>`;
       container.appendChild(toast);
 
       // Trigger transition
@@ -5703,25 +5586,25 @@ function getPlaceholderColor($icon_type) {
     // Star Rating interactions in Modal Form
     const starBtns = document.querySelectorAll('#starRatingWrapper .star-btn');
     const guestbookRatingInput = document.getElementById('guestbookRating');
-    
+
     starBtns.forEach(btn => {
       btn.addEventListener('mouseover', () => {
         const hoverVal = parseInt(btn.getAttribute('data-value'), 10);
         highlightStars(hoverVal);
       });
-      
+
       btn.addEventListener('mouseout', () => {
         const selectedVal = parseInt(guestbookRatingInput.value, 10);
         highlightStars(selectedVal);
       });
-      
+
       btn.addEventListener('click', () => {
         const clickVal = parseInt(btn.getAttribute('data-value'), 10);
         guestbookRatingInput.value = clickVal;
         highlightStars(clickVal);
       });
     });
-    
+
     function highlightStars(count) {
       starBtns.forEach(btn => {
         const val = parseInt(btn.getAttribute('data-value'), 10);
@@ -5736,7 +5619,7 @@ function getPlaceholderColor($icon_type) {
         }
       });
     }
-    
+
     // Set default stars on load
     highlightStars(5);
 
@@ -5752,6 +5635,7 @@ function getPlaceholderColor($icon_type) {
     }
 
     async function loadGuestbook() {
+      document.getElementById('guestbookEmpty').textContent = 'Belum ada pesan. Jadilah yang pertama menulis!';
       try {
         const supabase = supabaseClient;
         const { data, error } = await supabase
@@ -5785,7 +5669,7 @@ function getPlaceholderColor($icon_type) {
         allGuestbookMessages.forEach((msg) => {
           const card = document.createElement('div');
           card.className = 'guestbook-card';
-          
+
           const dateStr = new Date(msg.created_at).toLocaleDateString('id-ID', {
             day: 'numeric',
             month: 'short',
@@ -5811,6 +5695,7 @@ function getPlaceholderColor($icon_type) {
           const originalCards = Array.from(grid.children);
           originalCards.forEach(card => {
             const clone = card.cloneNode(true);
+            clone.setAttribute('aria-hidden','true'); clone.inert=true;
             grid.appendChild(clone);
           });
 
@@ -5825,16 +5710,19 @@ function getPlaceholderColor($icon_type) {
       } catch (err) {
         console.warn('Guestbook load failed:', err.message);
         const emptyState = document.getElementById('guestbookEmpty');
-        if (emptyState) emptyState.style.display = 'block';
+        if (emptyState) { emptyState.style.display = 'block'; emptyState.replaceChildren(document.createTextNode('Pesan gagal dimuat. ')); const retry=document.createElement('button'); retry.textContent='Coba lagi'; retry.onclick=loadGuestbook; emptyState.appendChild(retry); }
       }
     }
 
+    let marqueePaused = false;
+    const pauseGuestbook = document.getElementById('pauseGuestbook');
+    pauseGuestbook.addEventListener('click', () => { marqueePaused=!marqueePaused; pauseGuestbook.setAttribute('aria-pressed', String(marqueePaused)); pauseGuestbook.textContent=marqueePaused?'Lanjutkan gerakan':'Jeda gerakan'; });
     function startMarqueeLoop() {
       const grid = document.getElementById('guestbookGrid');
       if (!grid || marqueeHalfWidth === 0) return;
 
       const loop = () => {
-        if (!isMarqueeHovered) {
+        if (!isMarqueeHovered && !marqueePaused && !document.hidden && !window.matchMedia('(prefers-reduced-motion: reduce)').matches && !grid.contains(document.activeElement) && grid.getBoundingClientRect().bottom > 0 && grid.getBoundingClientRect().top < innerHeight) {
           marqueePosX -= 0.8; // Speed in pixels per frame
           if (Math.abs(marqueePosX) >= marqueeHalfWidth) {
             marqueePosX = 0;
@@ -5843,9 +5731,9 @@ function getPlaceholderColor($icon_type) {
         }
         marqueeAnimationId = requestAnimationFrame(loop);
       };
-      
+
       marqueeAnimationId = requestAnimationFrame(loop);
-      
+
       // Attach hover hooks
       grid.removeEventListener('mouseenter', onMarqueeEnter);
       grid.removeEventListener('mouseleave', onMarqueeLeave);
@@ -5856,7 +5744,7 @@ function getPlaceholderColor($icon_type) {
     function onMarqueeEnter() {
       isMarqueeHovered = true;
     }
-    
+
     function onMarqueeLeave() {
       isMarqueeHovered = false;
     }
@@ -5869,7 +5757,7 @@ function getPlaceholderColor($icon_type) {
     const guestbookSubmitBtn = document.getElementById('guestbookSubmitBtn');
 
     function checkCooldown() {
-      const lastSent = localStorage.getItem('guestbook_last_sent');
+      let lastSent; try { lastSent = localStorage.getItem('guestbook_last_sent'); } catch { return 0; }
       if (lastSent) {
         const remaining = parseInt(lastSent, 10) - Date.now();
         if (remaining > 0) {
@@ -5955,17 +5843,15 @@ function getPlaceholderColor($icon_type) {
 
         try {
           const supabase = supabaseClient;
-          const { error } = await supabase
-            .from('guestbook')
-            .insert([{ name, message, rating: parseInt(guestbookRatingInput.value, 10), is_approved: false }]);
-
-          if (error) throw error;
+          const response = await fetch('/api/guestbook.php', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name, message, rating:parseInt(guestbookRatingInput.value,10), website:document.getElementById('guestbookWebsite').value}), signal:AbortSignal.timeout(15000)});
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error || 'Pesan belum tersimpan.');
 
           // Set Cooldown
-          localStorage.setItem('guestbook_last_sent', (Date.now() + GUESTBOOK_COOLDOWN_MS).toString());
+          try { localStorage.setItem('guestbook_last_sent', (Date.now() + GUESTBOOK_COOLDOWN_MS).toString()); } catch {}
 
           showToast('Pesan terkirim! Sedang menunggu moderasi Admin.', 'success');
-          
+
           // Reset form
           guestbookForm.reset();
           highlightStars(5);
@@ -5981,59 +5867,7 @@ function getPlaceholderColor($icon_type) {
     }
 
     // --- INTERACTIVE JOURNEY MODAL ---
-    const JOURNEY_DATA = {
-      unair: {
-        title: "Universitas Airlangga",
-        year: "2026 - Present",
-        icon: '<i class="fas fa-university"></i>',
-        achievements: [
-          "Terpilih sebagai Google Student Ambassador — mewakili Google di Universitas Airlangga dan menggerakkan mahasiswa/siswa terhadap teknologi, program, dan inisiatif Google (Okt 2026 - Sekarang)."
-        ],
-        certs: [
-          { url: "", title: "Google Student Ambassador" }, // TODO: ganti dengan URL gambar bukti
-        ]
-      },
-      smp: {
-        title: "SMP Negeri 4 Pati",
-        year: "2019 - 2022",
-        icon: '<i class="fas fa-microchip"></i>',
-        achievements: [
-          "Mulai mendalami dasar logika pemrograman secara otodidak.",
-          "Mengikuti olimpiade komputer tingkat kabupaten/provinsi.",
-          "Aktif dalam klub TIK sekolah dan membantu layouting majalah dinding digital."
-        ],
-        certs: []
-      },
-      sma: {
-        title: "SMA Negeri 3 Pati",
-        year: "2023 - Present",
-        icon: '<i class="fas fa-graduation-cap"></i>',
-        achievements: [
-          "Juara 1 Lomba Karya Tulis Ilmiah (KTI) Tingkat Nasional IEEE Competition 2025 Universitas Brawijaya.",
-          "Juara 1 Desain Poster Digital FLS3N Tingkat Kabupaten Pati 2025 yang diselenggarakan oleh Puspresnas.",
-          "Juara 2 IoT & Networking Competition Tingkat Nasional 2025 yang diselenggarakan oleh Politeknik Elektronika Negeri Surabaya (PENS).",
-          "Juara 3 Lomba Karya Tulis Ilmiah (KTI) UAD Fair 2025 tingkat DIY-Jawa Tengah bidang Fisika Terapan dan Rekayasa yang diselenggarakan oleh Universitas Ahmad Dahlan (UAD).",
-          "Juara Harapan 2 Karya Tulis Ilmiah Kreativitas dan Inovasi Masyarakat (KRENOVA) Tingkat Kabupaten Pati bidang Rekayasa Energi Manufaktur yang diselenggarakan oleh Bappeda.",
-          "Finalis KRENOVA Tingkat Provinsi Jawa Tengah mewakili Kabupaten Pati yang diselenggarakan oleh Brida Provinsi Jawa Tengah.",
-          "Gold Medal Indonesian Advance Science Competition (IASC) bidang Informatika yang diselenggarakan oleh Fosnas."
-        ],
-        orgs: [
-          "Ketua SMAGA English Association (SEA) Periode 2024/2025.",
-          "Ketua Ekstrakurikuler Karya Ilmiah Remaja (KIR) Periode 2025/2026.",
-          "Koordinator OSIS Seksi Bidang Ilmu Teknologi Informasi, Komunikasi, serta Publikasi dan Dokumentasi (PDD) Periode 2024/2025.",
-          "Koordinator Divisi IT dan Publikasi Program DISAWIDHA ADIWIYATA SMA Negeri 3 Pati Tahun 2025.",
-          "Anggota Ekstrakurikuler Jurnalistik SMA Negeri 3 Pati Periode 2023/2024.",
-          "Anggota Ekstrakurikuler Majalah Dinding (Mading) SMA Negeri 3 Pati Periode 2025/2026.",
-          "Ketua Divisi IT pada Event SMAGADAY Tahun 2024."
-        ],
-        certs: [
-          { url: "https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841890/vr8n9ecgmxknyt3ugv9q.webp", title: "Juara 1 Nasional KTI IEEE Fest UB" },
-          { url: "https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841893/tasbvk8xwlygb71niqsz.webp", title: "Juara 2 Nasional TechnoFair App Dev" },
-          { url: "https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841891/b0gjexr0kwsjdvopbyfg.webp", title: "Juara 1 FLS3N Kab. Pati" },
-          { url: "https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841894/e0wjlmiyh2lrhkzwrup5.webp", title: "Juara 3 KTI UAD DIY-Jateng" }
-        ]
-      }
-    };
+    const JOURNEY_DATA = <?= json_encode(json_decode(file_get_contents(__DIR__ . '/../data/journey.json'), true), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 
     const journeyModal = document.getElementById('journeyModal');
     const journeyModalOverlay = document.getElementById('journeyModalOverlay');
@@ -6049,14 +5883,14 @@ function getPlaceholderColor($icon_type) {
 
       // Achievements
       const achContainer = document.getElementById('journeyModalAchievements');
-      achContainer.innerHTML = data.achievements.map(ach => `<li>${ach}</li>`).join('');
+      achContainer.innerHTML = data.achievements.map(ach => `<li>${escapeHtml(ach)}</li>`).join('');
 
       // Organizations
       const orgsSection = document.getElementById('journeyOrgsSection');
       const orgsContainer = document.getElementById('journeyModalOrgs');
       if (data.orgs && data.orgs.length > 0) {
         orgsSection.style.display = 'block';
-        orgsContainer.innerHTML = data.orgs.map(org => `<li>${org}</li>`).join('');
+        orgsContainer.innerHTML = data.orgs.map(org => `<li>${escapeHtml(org)}</li>`).join('');
       } else {
         orgsSection.style.display = 'none';
         orgsContainer.innerHTML = '';
@@ -6074,14 +5908,14 @@ function getPlaceholderColor($icon_type) {
             return `
               <div class="journey-modal-gallery-item cert-placeholder">
                 <i class="fas fa-image"></i>
-                <div class="journey-modal-gallery-item-title">${cert.title}</div>
+                <div class="journey-modal-gallery-item-title">${escapeHtml(cert.title)}</div>
               </div>
             `;
           }
           return `
-            <div class="journey-modal-gallery-item" onclick="openFullImg('${cert.url}')">
-              <img src="${cert.url}" alt="${cert.title}" loading="lazy">
-              <div class="journey-modal-gallery-item-title">${cert.title}</div>
+            <div class="journey-modal-gallery-item" data-full-image="${escapeHtml(safeUrl(cert.url))}" role="button" tabindex="0" aria-label="Perbesar sertifikat">
+              <img src="${escapeHtml(safeUrl(cert.url))}" alt="${escapeHtml(cert.title)}" loading="lazy">
+              <div class="journey-modal-gallery-item-title">${escapeHtml(cert.title)}</div>
             </div>
           `;
         }).join('');
@@ -6112,7 +5946,7 @@ function getPlaceholderColor($icon_type) {
 
     // --- LIGHTBOX MODAL ---
     function openLightbox(card) {
-      const t = JSON.parse(card.getAttribute('data-testimonial'));
+      const t = card.testimonialData;
       const overlay = document.getElementById('lightboxOverlay');
       const title = document.getElementById('lightboxTitle');
       const body = document.getElementById('lightboxBody');
@@ -6122,46 +5956,28 @@ function getPlaceholderColor($icon_type) {
 
       body.innerHTML = `
         <div class="lightbox-images">
-          ${t.transfer_proof ? `
-          <div class="lightbox-img-item" onclick="openFullImg('${t.transfer_proof}')">
-            <img src="${t.transfer_proof}" alt="Transfer proof" loading="lazy">
-            <span class="lightbox-img-label">Transfer Proof</span>
-          </div>` : ''}
-          ${t.project_proof ? `
-          <div class="lightbox-img-item" onclick="openFullImg('${t.project_proof}')">
-            <img src="${t.project_proof}" alt="Project proof" loading="lazy">
+          ${safeUrl(t.project_proof) ? `
+          <div class="lightbox-img-item" data-full-image="${escapeHtml(safeUrl(t.project_proof))}" role="button" tabindex="0" aria-label="Perbesar gambar proyek">
+            <img src="${escapeHtml(safeUrl(t.project_proof) || fallbackImage)}" alt="Project proof" loading="lazy">
             <span class="lightbox-img-label">Project Proof</span>
-          </div>` : ''}
-          ${t.chat_screenshot ? `
-          <div class="lightbox-img-item" onclick="openFullImg('${t.chat_screenshot}')">
-            <img src="${t.chat_screenshot}" alt="Chat screenshot" loading="lazy">
-            <span class="lightbox-img-label">Chat Screenshot</span>
           </div>` : ''}
         </div>
 
         <div class="lightbox-details">
           <div class="lightbox-detail-item">
             <div class="lightbox-detail-label">Customer</div>
-            <div class="lightbox-detail-value">${t.customer_name}</div>
+            <div class="lightbox-detail-value">${escapeHtml(t.customer_name)}</div>
           </div>
           <div class="lightbox-detail-item">
             <div class="lightbox-detail-label">Category</div>
-            <div class="lightbox-detail-value" style="color:${catColor.color}">${t.category}</div>
-          </div>
-          <div class="lightbox-detail-item">
-            <div class="lightbox-detail-label">Price</div>
-            <div class="lightbox-detail-value price">${formatRupiah(t.price)}</div>
-          </div>
-          <div class="lightbox-detail-item">
-            <div class="lightbox-detail-label">Date</div>
-            <div class="lightbox-detail-value">${formatDate(t.transaction_date)}</div>
+            <div class="lightbox-detail-value" style="color:${catColor.color}">${escapeHtml(t.category)}</div>
           </div>
         </div>
 
         ${(t.project_link || t.demo_video_url) ? `
           <div class="lightbox-links">
-            ${t.project_link ? `<a href="${t.project_link}" target="_blank" rel="noopener" class="lightbox-link-btn project"><i class="fas fa-external-link-alt"></i> View Project</a>` : ''}
-            ${t.demo_video_url ? `<a href="${t.demo_video_url}" target="_blank" rel="noopener" class="lightbox-link-btn video"><i class="fab fa-youtube"></i> Watch Demo</a>` : ''}
+            ${safeUrl(t.project_link) ? `<a href="${escapeHtml(safeUrl(t.project_link))}" target="_blank" rel="noopener" class="lightbox-link-btn project"><i class="fas fa-external-link-alt"></i> Buka proyek</a>` : ''}
+            ${safeUrl(t.demo_video_url) ? `<a href="${escapeHtml(safeUrl(t.demo_video_url))}" target="_blank" rel="noopener" class="lightbox-link-btn video"><i class="fab fa-youtube"></i> Lihat demo</a>` : ''}
           </div>
         ` : ''}
       `;
@@ -6189,7 +6005,7 @@ function getPlaceholderColor($icon_type) {
     // --- FULLSCREEN IMAGE VIEWER ---
     function openFullImg(url) {
       const viewer = document.getElementById('lightboxFullImg');
-      document.getElementById('fullImgSrc').src = url;
+      document.getElementById('fullImgSrc').src = safeUrl(url);
       viewer.classList.add('active');
     }
 
@@ -6219,7 +6035,7 @@ function getPlaceholderColor($icon_type) {
         if (grid) grid.style.display = 'none';
       }
     }
-    
+
     // --------------------------------------------------------
     // --- NEW: GITHUB 3D GRAPH VISUALIZATION & FETCH ---
     // --------------------------------------------------------
@@ -6229,11 +6045,11 @@ function getPlaceholderColor($icon_type) {
       canvas.width = 512;
       canvas.height = 512;
       const context = canvas.getContext('2d');
-      
+
       // Background gelap
       context.fillStyle = '#111';
       context.fillRect(0, 0, 512, 512);
-      
+
       // Noise / Goresan metal
       for (let i = 0; i < 20000; i++) {
         context.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.1})`;
@@ -6245,7 +6061,7 @@ function getPlaceholderColor($icon_type) {
       }
       return new THREE.CanvasTexture(canvas);
     }
-    
+
     // --- Helper: Membuat Lintasan Orbit Bintang (Dashed Circles) ---
     function createOrbitRing(radius, colorHex) {
       const geometry = new THREE.BufferGeometry();
@@ -6256,7 +6072,7 @@ function getPlaceholderColor($icon_type) {
         points.push(new THREE.Vector3(Math.cos(theta) * radius, 0, Math.sin(theta) * radius));
       }
       geometry.setFromPoints(points);
-      
+
       const material = new THREE.LineDashedMaterial({
         color: colorHex,
         dashSize: 1.2,
@@ -6264,7 +6080,7 @@ function getPlaceholderColor($icon_type) {
         transparent: true,
         opacity: 0.35
       });
-      
+
       const line = new THREE.Line(geometry, material);
       line.computeLineDistances(); // Crucial for dashed line rendering!
       return line;
@@ -6275,13 +6091,13 @@ function getPlaceholderColor($icon_type) {
       const geometry = new THREE.BufferGeometry();
       const count = 3000;
       const positions = new Float32Array(count * 3);
-      
+
       for (let i = 0; i < count * 3; i++) {
         positions[i] = (Math.random() - 0.5) * 100;
       }
-      
+
       geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-      
+
       const material = new THREE.PointsMaterial({
         size: 0.15,
         color: 0xffffff,
@@ -6289,28 +6105,28 @@ function getPlaceholderColor($icon_type) {
         opacity: 0.8,
         sizeAttenuation: true
       });
-      
+
       return new THREE.Points(geometry, material);
     }
-    
+
     // --- Helper 3: Texture Partikel Cahaya (Updated: Lebih Solid) ---
     function createParticleTexture() {
       const canvas = document.createElement('canvas');
       canvas.width = 64;
       canvas.height = 64; // Resolusi naik dikit
       const ctx = canvas.getContext('2d');
-      
+
       const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
       grad.addColorStop(0, 'rgba(255, 255, 255, 1)'); // Pusat putih terang
       grad.addColorStop(0.4, 'rgba(255, 255, 255, 0.5)');
       grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      
+
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, 64, 64);
-      
+
       return new THREE.CanvasTexture(canvas);
     }
-    
+
     // --- Helper 4: Galaxy Nebula (Updated: Ukuran Besar & Terlihat) ---
     function createGalaxy() {
       const particleCount = 1500;
@@ -6318,13 +6134,13 @@ function getPlaceholderColor($icon_type) {
       const positions = [];
       const colors = [];
       const sizes = [];
-      
+
       const colorPalette = [
         new THREE.Color('#00f3ff'), // Cyan Neon
         new THREE.Color('#bc13fe'), // Purple Neon
         new THREE.Color('#ffffff') // White
       ];
-      
+
       for (let i = 0; i < particleCount; i++) {
         // Sebaran Galaxy (Spiral-ish random)
         const angle = Math.random() * Math.PI * 2;
@@ -6332,20 +6148,20 @@ function getPlaceholderColor($icon_type) {
         const x = Math.cos(angle) * radius;
         const y = (Math.random() - 0.5) * 15; // Tebal vertikal
         const z = Math.sin(angle) * radius;
-        
+
         positions.push(x, y, z);
-        
+
         const color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
         colors.push(color.r, color.g, color.b);
-        
+
         // Ukuran partikel acak (Lebih besar dari sebelumnya)
         sizes.push(0.5 + Math.random() * 1.5);
       }
-      
+
       geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
       geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
       geom.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
-      
+
       const mat = new THREE.PointsMaterial({
         size: 1.0, // Base size diperbesar
         vertexColors: true,
@@ -6355,10 +6171,10 @@ function getPlaceholderColor($icon_type) {
         transparent: true,
         opacity: 0.8 // Opacity dinaikkan
       });
-      
+
       return new THREE.Points(geom, mat);
     }
-    
+
     // --- Helper 5: Hologram Text Material ---
     function createHologramMaterial(colorHex) {
       return new THREE.ShaderMaterial({
@@ -6371,15 +6187,15 @@ function getPlaceholderColor($icon_type) {
       varying vec3 vPos;
       varying vec3 vNormal;
       varying vec3 vViewPosition;
-      
+
       void main() {
         vUv = uv;
         vPos = position;
         vNormal = normalize(normalMatrix * normal);
-        
+
         vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
         vViewPosition = -mvPosition.xyz;
-        
+
         gl_Position = projectionMatrix * mvPosition;
       }
     `,
@@ -6390,35 +6206,35 @@ function getPlaceholderColor($icon_type) {
       varying vec3 vPos;
       varying vec3 vNormal;
       varying vec3 vViewPosition;
-      
+
       void main() {
         // Fresnel effect untuk edge detection
         vec3 viewDir = normalize(vViewPosition);
         float fresnel = pow(1.0 - abs(dot(vNormal, viewDir)), 3.0);
         fresnel = clamp(fresnel, 0.0, 1.0);
-        
+
         // Bagian tengah/dalam lebih gelap (inverse fresnel)
         float innerDarkness = 1.0 - fresnel;
         innerDarkness = pow(innerDarkness, 1.5); // Lebih gelap di tengah
-        
+
         // Base color dengan gradient dari gelap (tengah) ke terang (edge)
         vec3 darkCenter = uColor * 0.15; // Sangat gelap di tengah
         vec3 brightEdge = uColor * 1.2;  // Terang di pinggir
         vec3 baseColor = mix(darkCenter, brightEdge, fresnel);
-        
+
         // Scanline effect - lebih subtle dan tidak menutupi text
         float scanline = sin(vPos.y * 20.0 - uTime * 2.0) * 0.5 + 0.5;
         scanline = smoothstep(0.4, 0.6, scanline) * 0.15; // Sangat subtle
-        
+
         // Kombinasi: base dengan gradasi + scanline minimal
         vec3 finalColor = baseColor + (uColor * scanline * 0.2);
-        
+
         // Opacity: solid di tengah, semi-transparan di edge untuk glow
         float alpha = mix(0.95, 0.7, fresnel) + scanline * 0.05;
-        
+
         // Tambah sedikit ambient untuk readability
         finalColor += uColor * 0.1;
-        
+
         gl_FragColor = vec4(finalColor, alpha);
       }
     `,
@@ -6428,29 +6244,45 @@ function getPlaceholderColor($icon_type) {
         blending: THREE.NormalBlending // Ganti ke Normal untuk kontras lebih baik
       });
     }
-    
+
+    let githubLoadPromise;
+    function loadGithubDependencies() {
+      if (!githubLoadPromise) githubLoadPromise = (async () => {
+        for (const src of ["https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js", "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js", "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js", "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js", "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js", "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js", "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js", "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"]) {
+          if (Array.from(document.scripts).some(script => script.src===src && script.dataset.loaded==='true')) continue;
+          await new Promise((resolve,reject) => { const script=document.createElement('script'); const timeout=setTimeout(()=>{script.remove();reject(new Error('Dependency timeout'));},10000); script.src=src; script.onload=()=>{clearTimeout(timeout);script.dataset.loaded='true';resolve();}; script.onerror=()=>{clearTimeout(timeout);script.remove();reject(new Error('Dependency unavailable'));}; document.head.appendChild(script); });
+        }
+      })().catch(error => { githubLoadPromise=null; throw error; });
+      return githubLoadPromise;
+    }
+    const githubLoadButton = document.createElement('button');
+    githubLoadButton.className = 'hero-cta'; githubLoadButton.textContent = 'Muat visualisasi interaktif';
+    document.getElementById('github-3d-canvas').replaceChildren(githubLoadButton);
+    githubLoadButton.addEventListener('click', async () => { githubLoadButton.disabled=true; await initGithub3D(); });
     async function initGithub3D() {
       const username = 'relv-dev';
       const container = document.getElementById('github-3d-canvas');
-      
+
       try {
-        const response = await fetch(`https://github-stats-api-tau.vercel.app/api/github-stats?username=${username}`);
+        const response = await fetch(`https://github-stats-api-tau.vercel.app/api/github-stats?username=${username}`, {signal:AbortSignal.timeout(12000)});
+        if (!response.ok) throw new Error('GitHub data unavailable');
+        await loadGithubDependencies();
         const data = await response.json();
-        
+
         document.getElementById('gh-username').innerText = `@${data.username}`;
         document.getElementById('gh-repos').innerText = data.totalRepos;
         document.getElementById('gh-commits').innerText = data.totalCommits;
         document.getElementById('gh-contributions').innerText = data.contributionsCurrentYear;
-        
+
         // UPDATE DI SINI: Kirim 'data.topLanguages' sebagai parameter ke-4
         render3DScene(data.contributionGraph, container, data.totalCommits, data.topLanguages);
-        
+
       } catch (error) {
         console.error("Error fetching Github data:", error);
-        container.innerHTML = '<p style="color:#fff; text-align:center;">Failed to load 3D Data</p>';
+        container.replaceChildren(document.createTextNode('Visualisasi belum berhasil dimuat. '), githubLoadButton); githubLoadButton.disabled=false; githubLoadButton.textContent='Coba lagi';
       }
     }
-    
+
     function render3DScene(graphData, container, totalCommits, apiTopLanguages) {
       // --- HELPER: COLORS ---
       const langColors = {
@@ -6474,7 +6306,7 @@ function getPlaceholderColor($icon_type) {
         "Ruby": 0x701516,
         "Shell": 0x89e051
       };
-      
+
       // --- AUDIO SETUP ---
       let audioCtx = null;
       function getAudioContext() {
@@ -6486,7 +6318,7 @@ function getPlaceholderColor($icon_type) {
         }
         return audioCtx;
       }
-      
+
       const unlockAudio = () => {
         getAudioContext();
         document.removeEventListener('click', unlockAudio);
@@ -6494,15 +6326,15 @@ function getPlaceholderColor($icon_type) {
       };
       document.addEventListener('click', unlockAudio);
       document.addEventListener('touchstart', unlockAudio);
-      
-      function playSound(level, count, isLanguage = false) {
+
+      function playSound(level, count, isLanguage = false) { return;
         const ctx = getAudioContext();
         if (!ctx) return;
         const oscillator = ctx.createOscillator();
         const gainNode = ctx.createGain();
         oscillator.connect(gainNode);
         gainNode.connect(ctx.destination);
-        
+
         if (isLanguage) {
           oscillator.type = 'triangle';
           oscillator.frequency.setValueAtTime(523.25, ctx.currentTime);
@@ -6515,11 +6347,11 @@ function getPlaceholderColor($icon_type) {
           const scale = [261.63, 293.66, 329.63, 392.00, 440.00];
           const baseFreq = scale[level] || 261.63;
           const finalFreq = baseFreq + (count * 4);
-          
+
           oscillator.type = 'sine';
           oscillator.frequency.setValueAtTime(finalFreq, ctx.currentTime);
           oscillator.frequency.exponentialRampToValueAtTime(finalFreq * 1.3, ctx.currentTime + 0.06);
-          
+
           gainNode.gain.setValueAtTime(0.15, ctx.currentTime); // LOUDER
           gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
           oscillator.start();
@@ -6530,38 +6362,38 @@ function getPlaceholderColor($icon_type) {
       function playBuildUpSound() {
         const ctx = getAudioContext();
         if (!ctx) return;
-        
+
         // Sweeping Oscillator (low to high synth sweep)
         const osc = ctx.createOscillator();
         const filter = ctx.createBiquadFilter();
         const gainNode = ctx.createGain();
-        
+
         osc.connect(filter);
         filter.connect(gainNode);
         gainNode.connect(ctx.destination);
-        
+
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(150, ctx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(700, ctx.currentTime + 0.8);
-        
+
         // High-resonance low-pass filter sweep for portal whoosh
         filter.type = 'lowpass';
         filter.Q.setValueAtTime(8, ctx.currentTime);
         filter.frequency.setValueAtTime(300, ctx.currentTime);
         filter.frequency.exponentialRampToValueAtTime(2000, ctx.currentTime + 0.8);
-        
+
         // Smooth volume envelope
         gainNode.gain.setValueAtTime(0.001, ctx.currentTime);
         gainNode.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.15);
         gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.85);
-        
+
         osc.start();
         osc.stop(ctx.currentTime + 0.9);
       }
 
       function createAstronaut() {
         const astronaut = new THREE.Group();
-        
+
         // 1. Torso/Body (White Box)
         const bodyGeo = new THREE.BoxGeometry(0.8, 1.0, 0.5);
         const bodyMat = new THREE.MeshStandardMaterial({
@@ -6573,7 +6405,7 @@ function getPlaceholderColor($icon_type) {
         body.castShadow = true;
         body.receiveShadow = true;
         astronaut.add(body);
-        
+
         // Chestplate Decal Text: "RELV-DEV" on front chest
         const canvas = document.createElement('canvas');
         canvas.width = 128;
@@ -6588,34 +6420,34 @@ function getPlaceholderColor($icon_type) {
         ctx.shadowColor = '#00f3ff';
         ctx.shadowBlur = 8;
         ctx.fillText('RELV-DEV', 64, 32);
-        
+
         const tagTexture = new THREE.CanvasTexture(canvas);
         const tagMat = new THREE.MeshBasicMaterial({ map: tagTexture });
         const tagGeo = new THREE.PlaneGeometry(0.6, 0.3);
         const tagMesh = new THREE.Mesh(tagGeo, tagMat);
         tagMesh.position.set(0, 0.15, 0.26);
         astronaut.add(tagMesh);
-        
+
         // Control panel box on chest
         const panelGeo = new THREE.BoxGeometry(0.4, 0.3, 0.1);
         const panelMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
         const panel = new THREE.Mesh(panelGeo, panelMat);
         panel.position.set(0, -0.2, 0.27);
         astronaut.add(panel);
-        
+
         // Tiny glowing buttons on panel
         const btnGeo = new THREE.BoxGeometry(0.08, 0.08, 0.05);
         const btnRedMat = new THREE.MeshBasicMaterial({ color: 0xff0055 });
         const btnGreenMat = new THREE.MeshBasicMaterial({ color: 0x00ff66 });
-        
+
         const btn1 = new THREE.Mesh(btnGeo, btnRedMat);
         btn1.position.set(-0.1, 0, 0.05);
         panel.add(btn1);
-        
+
         const btn2 = new THREE.Mesh(btnGeo, btnGreenMat);
         btn2.position.set(0.1, 0, 0.05);
         panel.add(btn2);
-        
+
         // 2. Helmet
         const helmetGeo = new THREE.SphereGeometry(0.45, 16, 16);
         const helmetMat = new THREE.MeshStandardMaterial({
@@ -6626,7 +6458,7 @@ function getPlaceholderColor($icon_type) {
         const helmet = new THREE.Mesh(helmetGeo, helmetMat);
         helmet.position.y = 0.85;
         astronaut.add(helmet);
-        
+
         // Visor (dark shiny cyan glass)
         const visorGeo = new THREE.SphereGeometry(0.38, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
         visorGeo.rotateX(Math.PI / 2);
@@ -6643,107 +6475,107 @@ function getPlaceholderColor($icon_type) {
         visor.position.set(0, 0.85, 0.12);
         visor.scale.set(1, 0.8, 1.1);
         astronaut.add(visor);
-        
+
         // Antenna
         const antennaPoleGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.3);
         const antennaPoleMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa });
         const antennaPole = new THREE.Mesh(antennaPoleGeo, antennaPoleMat);
         antennaPole.position.set(0, 1.35, 0);
         astronaut.add(antennaPole);
-        
+
         const antennaTipGeo = new THREE.SphereGeometry(0.06, 8, 8);
         const antennaTipMat = new THREE.MeshBasicMaterial({ color: 0xff0055 });
         const antennaTip = new THREE.Mesh(antennaTipGeo, antennaTipMat);
         antennaTip.position.set(0, 1.5, 0);
         astronaut.add(antennaTip);
-        
+
         // 3. Arms & Hands
         const armGeo = new THREE.CylinderGeometry(0.12, 0.1, 0.5, 8);
         armGeo.translate(0, -0.25, 0);
-        
+
         // Left Arm
         const leftArm = new THREE.Mesh(armGeo, bodyMat);
         leftArm.position.set(-0.5, 0.3, 0);
         leftArm.rotation.z = Math.PI / 6;
         astronaut.add(leftArm);
-        
+
         // Right Arm
         const rightArm = new THREE.Mesh(armGeo, bodyMat);
         rightArm.position.set(0.5, 0.3, 0);
         rightArm.rotation.z = -Math.PI / 6;
         astronaut.add(rightArm);
-        
+
         // Joint details (cyan bands)
         const bandGeo = new THREE.CylinderGeometry(0.14, 0.14, 0.08, 8);
         const bandMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff });
-        
+
         const lShoulderBand = new THREE.Mesh(bandGeo, bandMat);
         lShoulderBand.position.set(-0.45, 0.35, 0);
         lShoulderBand.rotation.z = Math.PI / 6;
         astronaut.add(lShoulderBand);
-        
+
         const rShoulderBand = new THREE.Mesh(bandGeo, bandMat);
         rShoulderBand.position.set(0.45, 0.35, 0);
         rShoulderBand.rotation.z = -Math.PI / 6;
         astronaut.add(rShoulderBand);
-        
+
         // 4. Legs & Boots
         const legGeo = new THREE.CylinderGeometry(0.14, 0.12, 0.6, 8);
         legGeo.translate(0, -0.3, 0);
-        
+
         // Left Leg
         const leftLeg = new THREE.Mesh(legGeo, bodyMat);
         leftLeg.position.set(-0.25, -0.5, 0);
         astronaut.add(leftLeg);
-        
+
         // Right Leg
         const rightLeg = new THREE.Mesh(legGeo, bodyMat);
         rightLeg.position.set(0.25, -0.5, 0);
         astronaut.add(rightLeg);
-        
+
         // Boots
         const bootGeo = new THREE.BoxGeometry(0.18, 0.15, 0.3);
         const bootMat = new THREE.MeshStandardMaterial({ color: 0xbc13fe, roughness: 0.5 });
-        
+
         const leftBoot = new THREE.Mesh(bootGeo, bootMat);
         leftBoot.position.set(-0.25, -0.85, 0.05);
         astronaut.add(leftBoot);
-        
+
         const rightBoot = new THREE.Mesh(bootGeo, bootMat);
         rightBoot.position.set(0.25, -0.85, 0.05);
         astronaut.add(rightBoot);
-        
+
         // Knee bands (purple cuffs)
         const kneeBandGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.08, 8);
         const kneeBandMat = new THREE.MeshBasicMaterial({ color: 0xbc13fe });
-        
+
         const lKnee = new THREE.Mesh(kneeBandGeo, kneeBandMat);
         lKnee.position.set(-0.25, -0.5, 0.02);
         astronaut.add(lKnee);
-        
+
         const rKnee = new THREE.Mesh(kneeBandGeo, kneeBandMat);
         rKnee.position.set(0.25, -0.5, 0.02);
         astronaut.add(rKnee);
-        
+
         // 5. Jetpack (Backpack)
         const packGeo = new THREE.BoxGeometry(0.6, 0.8, 0.3);
         const packMat = new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.6, roughness: 0.3 });
         const pack = new THREE.Mesh(packGeo, packMat);
         pack.position.set(0, 0, -0.38);
         astronaut.add(pack);
-        
+
         // Jetpack Thruster Tubes (L & R)
         const tubeGeo = new THREE.CylinderGeometry(0.1, 0.08, 0.4, 8);
         const tubeMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.2 });
-        
+
         const leftTube = new THREE.Mesh(tubeGeo, tubeMat);
         leftTube.position.set(-0.2, -0.4, -0.05);
         pack.add(leftTube);
-        
+
         const rightTube = new THREE.Mesh(tubeGeo, tubeMat);
         rightTube.position.set(0.2, -0.4, -0.05);
         pack.add(rightTube);
-        
+
         // Jetpack dynamic flames (orange cones)
         const flameGeo = new THREE.ConeGeometry(0.08, 0.4, 8);
         flameGeo.translate(0, -0.2, 0);
@@ -6752,15 +6584,15 @@ function getPlaceholderColor($icon_type) {
           transparent: true,
           opacity: 0.95
         });
-        
+
         const leftFlame = new THREE.Mesh(flameGeo, flameMat);
         leftFlame.position.set(0, -0.2, 0);
         leftTube.add(leftFlame);
-        
+
         const rightFlame = new THREE.Mesh(flameGeo, flameMat);
         rightFlame.position.set(0, -0.2, 0);
         rightTube.add(rightFlame);
-        
+
         // Save references in userData
         astronaut.userData = {
           leftFlame: leftFlame,
@@ -6779,25 +6611,25 @@ function getPlaceholderColor($icon_type) {
           orbitRadiusZ: 10,
           targetY: 6.5
         };
-        
+
         // Set children userData recursively to tag all parts of the astronaut
         astronaut.traverse(child => {
           if (child.isMesh) {
             child.userData = { isAstronaut: true, parentGroup: astronaut };
           }
         });
-        
+
         return astronaut;
       }
 
-      function playAstroSound(type) {
+      function playAstroSound(type) { return;
         const ctx = getAudioContext();
         if (!ctx) return;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.connect(gain);
         gain.connect(ctx.destination);
-        
+
         if (type === 'boost') {
           osc.type = 'triangle';
           osc.frequency.setValueAtTime(80, ctx.currentTime);
@@ -6827,7 +6659,7 @@ function getPlaceholderColor($icon_type) {
 
       let activeAstroSprite = null;
       let astroSpriteTimeout = null;
-      
+
       function createAstroBubble(text) {
         if (activeAstroSprite) {
           scene.remove(activeAstroSprite);
@@ -6836,12 +6668,12 @@ function getPlaceholderColor($icon_type) {
         if (astroSpriteTimeout) {
           clearTimeout(astroSpriteTimeout);
         }
-        
+
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         canvas.width = 512;
         canvas.height = 128;
-        
+
         ctx.fillStyle = 'rgba(5, 5, 12, 0.9)';
         ctx.strokeStyle = '#00f3ff';
         ctx.lineWidth = 6;
@@ -6849,7 +6681,7 @@ function getPlaceholderColor($icon_type) {
         ctx.roundRect(10, 10, 492, 108, 20);
         ctx.fill();
         ctx.stroke();
-        
+
         ctx.beginPath();
         ctx.moveTo(246, 118);
         ctx.lineTo(266, 118);
@@ -6857,7 +6689,7 @@ function getPlaceholderColor($icon_type) {
         ctx.closePath();
         ctx.fillStyle = '#00f3ff';
         ctx.fill();
-        
+
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 26px "Space Grotesk", sans-serif';
         ctx.textAlign = 'center';
@@ -6865,20 +6697,20 @@ function getPlaceholderColor($icon_type) {
         ctx.shadowColor = '#00f3ff';
         ctx.shadowBlur = 10;
         ctx.fillText(text, 256, 64);
-        
+
         const texture = new THREE.CanvasTexture(canvas);
         const mat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
         const sprite = new THREE.Sprite(mat);
         sprite.scale.set(3.5, 0.875, 1);
-        
+
         return sprite;
       }
 
       function triggerAstronautInteraction(astro) {
         if (astro.userData.isDoingRoll || astro.userData.isWaving || astro.userData.isTeleporting) return;
-        
+
         const choice = Math.floor(Math.random() * 4) + 1;
-        
+
         if (choice === 1) {
           astro.userData.isDoingRoll = true;
           astro.userData.rollProgress = 0;
@@ -6899,7 +6731,7 @@ function getPlaceholderColor($icon_type) {
           scene.add(bubble);
           activeAstroSprite = bubble;
           playAstroSound('greeting');
-          
+
           astroSpriteTimeout = setTimeout(() => {
             if (activeAstroSprite === bubble) {
               scene.remove(bubble);
@@ -6916,21 +6748,21 @@ function getPlaceholderColor($icon_type) {
           playAstroSound('teleport');
         }
       }
-      
+
       // 1. Scene Setup
       const scene = new THREE.Scene();
       scene.fog = new THREE.FogExp2(0x050505, 0.015);
-      
+
       const camera = new THREE.PerspectiveCamera(45, container.offsetWidth / container.offsetHeight, 0.1, 1000);
-      
+
       const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
       renderer.setSize(container.offsetWidth, container.offsetHeight);
-      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
       renderer.toneMapping = THREE.ReinhardToneMapping;
       renderer.toneMappingExposure = 1.3;
       container.innerHTML = '';
       container.appendChild(renderer.domElement);
-      
+
       // 2. Controls
       const controls = new THREE.OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
@@ -6943,7 +6775,7 @@ function getPlaceholderColor($icon_type) {
       controls.maxPolarAngle = Math.PI / 1.5;
       controls.minDistance = 5;
       controls.maxDistance = 55;
-      
+
       // 3. Lighting
       const ambientLight = new THREE.AmbientLight(0x222222);
       scene.add(ambientLight);
@@ -6956,23 +6788,23 @@ function getPlaceholderColor($icon_type) {
       const blueLight = new THREE.PointLight(0x00f3ff, 3, 60);
       blueLight.position.set(-20, 10, 10);
       scene.add(blueLight);
-      
+
       // 4. Post Processing
       const renderScene = new THREE.RenderPass(scene, camera);
       const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(container.offsetWidth, container.offsetHeight), 1.5, 0.4, 0.1);
       const composer = new THREE.EffectComposer(renderer);
       composer.addPass(renderScene);
       composer.addPass(bloomPass);
-      
+
       // 5. Ecosystem
       const starField = createStarField();
       scene.add(starField);
       const galaxy = createGalaxy();
       scene.add(galaxy);
-      
+
       // --- NEW: Procedural Space Planets ---
       const planetsGroup = new THREE.Group();
-      
+
       // A. Planet 1: Purple Gas Giant + Rings
       const p1Group = new THREE.Group();
       const p1Geo = new THREE.SphereGeometry(1.8, 32, 32);
@@ -6985,7 +6817,7 @@ function getPlaceholderColor($icon_type) {
       });
       const p1Sphere = new THREE.Mesh(p1Geo, p1Mat);
       p1Group.add(p1Sphere);
-      
+
       const ringGeo = new THREE.RingGeometry(2.4, 4.0, 64);
       ringGeo.rotateX(Math.PI / 2);
       const ringMat = new THREE.MeshStandardMaterial({
@@ -6999,7 +6831,7 @@ function getPlaceholderColor($icon_type) {
       const p1Rings = new THREE.Mesh(ringGeo, ringMat);
       p1Group.add(p1Rings);
       planetsGroup.add(p1Group);
-      
+
       // B. Planet 2: Cyan Cyber Ocean + Outer Hologram Grid
       const p2Group = new THREE.Group();
       const p2Geo = new THREE.SphereGeometry(1.2, 32, 32);
@@ -7012,7 +6844,7 @@ function getPlaceholderColor($icon_type) {
       });
       const p2Sphere = new THREE.Mesh(p2Geo, p2Mat);
       p2Group.add(p2Sphere);
-      
+
       const p2WireGeo = new THREE.SphereGeometry(1.35, 16, 16);
       const p2WireMat = new THREE.MeshBasicMaterial({
         color: 0x00f3ff,
@@ -7023,7 +6855,7 @@ function getPlaceholderColor($icon_type) {
       const p2Wireframe = new THREE.Mesh(p2WireGeo, p2WireMat);
       p2Group.add(p2Wireframe);
       planetsGroup.add(p2Group);
-      
+
       // C. Planet 3: Lava Core Moon (Gold/Yellow)
       const p3Group = new THREE.Group();
       const p3Geo = new THREE.SphereGeometry(0.7, 32, 32);
@@ -7037,20 +6869,20 @@ function getPlaceholderColor($icon_type) {
       const p3Sphere = new THREE.Mesh(p3Geo, p3Mat);
       p3Group.add(p3Sphere);
       planetsGroup.add(p3Group);
-      
+
       scene.add(planetsGroup);
-      
+
       // --- NEW: Procedural Orbit Rings ---
       const orbitLinesGroup = new THREE.Group();
       orbitLinesGroup.add(createOrbitRing(32, 0xbc13fe)); // Purple Gas Giant Orbit
       orbitLinesGroup.add(createOrbitRing(22, 0x00f3ff)); // Cyan Ocean Orbit
       orbitLinesGroup.add(createOrbitRing(14, 0xffaa00)); // Gold Core Orbit
       scene.add(orbitLinesGroup);
-      
+
       // --- NEW: Add Astronaut ---
       const astronaut = createAstronaut();
       scene.add(astronaut);
-      
+
       // Define orbiting array for animation loop update
       const orbitingPlanets = [
         { group: p1Group, radius: 32, speed: 0.15, rotY: 0.01 },
@@ -7061,7 +6893,7 @@ function getPlaceholderColor($icon_type) {
       // 6. Main Groups
       const chartGroup = new THREE.Group();
       const interactiveGroup = new THREE.Group();
-      
+
       const techTexture = createTechTexture();
       const boxGeometry = new THREE.BoxGeometry(0.8, 1, 0.8);
       const colors = [0x111111, 0x0e4429, 0x006d32, 0x39d353, 0xffd700];
@@ -7069,7 +6901,7 @@ function getPlaceholderColor($icon_type) {
       let week = 0,
         day = 0;
       const totalWeeks = 52;
-      
+
       // 7. Generate Bars
       recentData.forEach((entry, index) => {
         if (day > 6) {
@@ -7078,7 +6910,7 @@ function getPlaceholderColor($icon_type) {
         }
         const level = entry.level;
         let targetHeight = level === 0 ? 0.15 : 0.5 + (level * 1.2);
-        
+
         const material = new THREE.MeshStandardMaterial({
           color: colors[level],
           map: techTexture,
@@ -7087,15 +6919,15 @@ function getPlaceholderColor($icon_type) {
           emissive: colors[level],
           emissiveIntensity: level === 0 ? 0 : 0.5 + (level * 0.2)
         });
-        
+
         const cube = new THREE.Mesh(boxGeometry, material);
         cube.position.x = (week - (totalWeeks / 2)) * 1.1;
         cube.position.z = (day - 3.5) * 1.1;
-        
+
         // ANIMATION SETUP
         cube.scale.y = 0.001;
         cube.position.y = -5; // Sembunyi
-        
+
         cube.userData = {
           targetScale: targetHeight,
           isBar: true,
@@ -7110,31 +6942,31 @@ function getPlaceholderColor($icon_type) {
         chartGroup.add(cube);
         day++;
       });
-      
+
       // 8. STRUCTURES & LAYOUT
-      
+
       // A. Platform Utama (Thick Base)
       const platformDepth = 12;
       const platformHeight = 3;
       const platformGeo = new THREE.BoxGeometry(60, platformHeight, platformDepth);
       const platformMat = new THREE.MeshStandardMaterial({ color: 0x050505, map: techTexture, roughness: 0.4, metalness: 0.6 });
       const mainPlatform = new THREE.Mesh(platformGeo, platformMat);
-      
+
       const finalPlatformY = -0.3 - (platformHeight / 2);
       mainPlatform.position.set(0, -10, 0); // Start di bawah
       mainPlatform.receiveShadow = true;
       chartGroup.add(mainPlatform);
-      
+
       interactiveGroup.add(chartGroup);
       scene.add(interactiveGroup);
-      
+
       // --- FONT LOADER ---
       // Variable material global agar bisa update uniform
       let hologramMaterial;
-      
+
       const loader = new THREE.FontLoader();
       loader.load('https://unpkg.com/three@0.128.0/examples/fonts/helvetiker_regular.typeface.json', function(font) {
-        
+
         // C. MAIN TEXT "TOTAL COMMITS" (POSISI DIPERBAIKI)
         const totalTextGeo = new THREE.TextGeometry(`${totalCommits} COMMITS`, {
           font: font,
@@ -7147,19 +6979,19 @@ function getPlaceholderColor($icon_type) {
           bevelSegments: 3
         });
         totalTextGeo.center();
-        
+
         hologramMaterial = createHologramMaterial(0xFFD700); // Helper function from previous turn
-        
+
         const totalTextMesh = new THREE.Mesh(totalTextGeo, hologramMaterial);
         // Start Scale 0
         totalTextMesh.scale.set(0, 0, 0);
         // TARGET POSISI FINAL (Sesuai request: Posisi dan Size seperti awal)
         totalTextMesh.position.set(0, -0.35, 0.9);
         totalTextMesh.rotation.x = -Math.PI / 10;
-        
+
         totalTextMesh.name = "mainTitle";
         interactiveGroup.add(totalTextMesh);
-        
+
         // D. LABEL "TOP 3 LANGUAGES"
         const labelGeo = new THREE.TextGeometry("TOP 3 LANGUAGES", { font: font, size: 0.6, height: 0.1, curveSegments: 6 });
         labelGeo.center();
@@ -7170,7 +7002,7 @@ function getPlaceholderColor($icon_type) {
         labelMesh.position.set(0, -0.3, labelZ);
         labelMesh.name = "subLabel";
         chartGroup.add(labelMesh);
-        
+
         // E. TOP LANGUAGES (POSISI SESUAI REQUEST ANDA)
         let topLangs = [];
         if (apiTopLanguages && apiTopLanguages.length > 0) {
@@ -7183,13 +7015,13 @@ function getPlaceholderColor($icon_type) {
         } else {
           topLangs = [{ name: "No Data", color: 0x555555, count: 0, percent: "0%" }];
         }
-        
+
         // --- KOORDINAT KHUSUS DARI USER ---
         let offsetX = -3;
         const spacingX = 3;
         const baseLangZ = 1.3;
         const baseLangY = -0.99;
-        
+
         topLangs.forEach((lang, index) => {
           const lGeo = new THREE.TextGeometry(lang.name, {
             font: font,
@@ -7204,14 +7036,14 @@ function getPlaceholderColor($icon_type) {
           lGeo.center();
           const lMat = new THREE.MeshStandardMaterial({ color: lang.color, emissive: lang.color, emissiveIntensity: 1.5 });
           const lMesh = new THREE.Mesh(lGeo, lMat);
-          
+
           // Start Scale 0
           lMesh.scale.set(0, 0, 0);
-          
+
           // POSISI FINAL (Sesuai request)
           lMesh.position.set(offsetX + (index * spacingX), baseLangY, baseLangZ);
           lMesh.rotation.x = 0;
-          
+
           lMesh.userData = {
             isLanguage: true,
             name: lang.name,
@@ -7227,15 +7059,15 @@ function getPlaceholderColor($icon_type) {
           interactiveGroup.add(lMesh);
         });
       });
-      
+
       const scaleFactor = 12 / (totalWeeks * 1.1);
       chartGroup.scale.set(scaleFactor, scaleFactor, scaleFactor);
       chartGroup.position.y = -0.5;
-      
+
       const isMobile = window.innerWidth < 768;
       camera.position.set(0, isMobile ? 18 : 14, isMobile ? 36 : 24);
       camera.lookAt(0, -2, 0);
-      
+
       // --- TOOLTIP ---
       function createSpriteLabel(topText, bottomText, isLanguage = false) {
         const canvas = document.createElement('canvas');
@@ -7265,7 +7097,7 @@ function getPlaceholderColor($icon_type) {
         ctx.fillText(bottomText, 256, 200);
         return new THREE.CanvasTexture(canvas);
       }
-      
+
       const spriteMaterial = new THREE.SpriteMaterial({ map: null, transparent: true, depthTest: false });
       const tooltipSprite = new THREE.Sprite(spriteMaterial);
       tooltipSprite.scale.set(4.5, 2.25, 1);
@@ -7274,27 +7106,27 @@ function getPlaceholderColor($icon_type) {
       const raycaster = new THREE.Raycaster();
       const mouse = new THREE.Vector2(-100, -100);
       let intersectedObject = null;
-      
+
       let isDraggingAstro = false;
       let hasDraggedAstro = false;
       let dragStartMouse = new THREE.Vector2();
       let dragStartTime = 0;
       const dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -6.5);
       const dragIntersection = new THREE.Vector3();
-      
+
       function updatePointer(clientX, clientY) {
         const rect = container.getBoundingClientRect();
         mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
         mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
       }
-      
+
       function onPointerDown(clientX, clientY) {
         updatePointer(clientX, clientY);
-        
+
         // Raycast
         raycaster.setFromCamera(mouse, camera);
         const intersects = raycaster.intersectObjects(scene.children, true);
-        
+
         let hitAstronaut = null;
         for (let i = 0; i < intersects.length; i++) {
           if (intersects[i].object.userData && intersects[i].object.userData.isAstronaut) {
@@ -7302,7 +7134,7 @@ function getPlaceholderColor($icon_type) {
             break;
           }
         }
-        
+
         if (hitAstronaut && astronaut) {
           isDraggingAstro = true;
           hasDraggedAstro = false;
@@ -7311,25 +7143,25 @@ function getPlaceholderColor($icon_type) {
           controls.enabled = false; // Turn off OrbitControls
         }
       }
-      
+
       function onPointerMove(clientX, clientY) {
         updatePointer(clientX, clientY);
-        
+
         if (isDraggingAstro && astronaut) {
           const dist = mouse.distanceTo(dragStartMouse);
           if (dist > 0.02 || (Date.now() - dragStartTime) > 150) {
             hasDraggedAstro = true;
           }
-          
+
           if (hasDraggedAstro) {
             raycaster.setFromCamera(mouse, camera);
             raycaster.ray.intersectPlane(dragPlane, dragIntersection);
-            
+
             // Bounds limit (keeping the astronaut in the scene)
             astronaut.position.x = Math.max(-45, Math.min(45, dragIntersection.x));
             astronaut.position.z = Math.max(-30, Math.min(30, dragIntersection.z));
             astronaut.position.y = 6.5;
-            
+
             // Jetpack flare visual effect
             const pulseScale = 1.8 + Math.random() * 0.6;
             astronaut.userData.leftFlame.scale.set(1, pulseScale, 1);
@@ -7337,18 +7169,18 @@ function getPlaceholderColor($icon_type) {
           }
         }
       }
-      
+
       function onPointerUp() {
         if (isDraggingAstro) {
           isDraggingAstro = false;
           controls.enabled = true; // Re-enable OrbitControls
-          
+
           if (!hasDraggedAstro && astronaut) {
             triggerAstronautInteraction(astronaut);
           }
         }
       }
-      
+
       container.addEventListener('mousedown', (e) => {
         onPointerDown(e.clientX, e.clientY);
       });
@@ -7356,7 +7188,7 @@ function getPlaceholderColor($icon_type) {
         const touch = e.touches[0];
         onPointerDown(touch.clientX, touch.clientY);
       }, { passive: false });
-      
+
       container.addEventListener('mousemove', (e) => {
         onPointerMove(e.clientX, e.clientY);
       });
@@ -7364,10 +7196,10 @@ function getPlaceholderColor($icon_type) {
         const touch = e.touches[0];
         onPointerMove(touch.clientX, touch.clientY);
       }, { passive: false });
-      
+
       window.addEventListener('mouseup', onPointerUp);
       window.addEventListener('touchend', onPointerUp);
-      
+
       window.addEventListener('resize', () => {
         if (!container) return;
         const newWidth = container.offsetWidth;
@@ -7377,40 +7209,39 @@ function getPlaceholderColor($icon_type) {
         camera.aspect = newWidth / newHeight;
         camera.updateProjectionMatrix();
       });
-      
+
+      let sceneVisible = false;
       let startAnimation = false;
       let animFrame = 0;
-      
+
       const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            startAnimation = true;
-            playBuildUpSound();
-            observer.disconnect();
-          }
+          sceneVisible = entry.isIntersecting;
+          if (sceneVisible) startAnimation = true;
         });
       }, { threshold: 0.3 });
       observer.observe(container);
-      
+
       // --- ANIMATION LOOP ---
       let time = 0;
-      
+
       function animate() {
         requestAnimationFrame(animate);
+        if (!sceneVisible || document.hidden || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
         time += 0.02;
-        
+
         if (hologramMaterial) hologramMaterial.uniforms.uTime.value = time;
-        
+
         // --- BUILDING ANIMATION ---
         if (startAnimation) {
           animFrame++;
-          
+
           // 1. Platform Naik
           const platSpd = 0.05;
           if (mainPlatform.position.y < finalPlatformY) {
             mainPlatform.position.y += (finalPlatformY - mainPlatform.position.y) * platSpd + 0.01;
           }
-          
+
           // 2. Bars Staggered Growth
           chartGroup.children.forEach(child => {
             if (child.userData.isBar) {
@@ -7418,23 +7249,23 @@ function getPlaceholderColor($icon_type) {
                 let targetScaleY = child.userData.targetScale;
                 let targetScaleXZ = 1;
                 let targetPosY = targetScaleY / 2;
-                
+
                 if (child.userData.isHovered) {
                   targetScaleY *= 1.5;
                   targetScaleXZ = 1.4;
                   targetPosY = targetScaleY / 2;
                 }
-                
+
                 // Animasi Scale Y
                 child.scale.y += (targetScaleY - child.scale.y) * 0.1;
-                
+
                 // Animasi Posisi Y (Dari -5 naik ke posisi normal)
                 if (child.position.y < targetPosY) {
                   child.position.y += (targetPosY - child.position.y) * 0.1;
                 } else {
                   child.position.y = targetPosY;
                 }
-                
+
                 child.scale.x += (targetScaleXZ - child.scale.x) * 0.1;
                 child.scale.z += (targetScaleXZ - child.scale.z) * 0.1;
               }
@@ -7443,7 +7274,7 @@ function getPlaceholderColor($icon_type) {
               child.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
             }
           });
-          
+
           // 3. Texts Pop Up (Main Title & Languages)
           interactiveGroup.children.forEach(child => {
             if (child.name === "mainTitle" && animFrame > 80) {
@@ -7456,13 +7287,13 @@ function getPlaceholderColor($icon_type) {
             }
           });
         }
-        
+
         // --- RAYCASTING ---
         raycaster.setFromCamera(mouse, camera);
         const intersects = raycaster.intersectObjects(interactiveGroup.children, true);
         let found = false;
         let object = null;
-        
+
         if (intersects.length > 0) {
           for (let i = 0; i < intersects.length; i++) {
             if (intersects[i].object.userData.isBar || intersects[i].object.userData.isLanguage) {
@@ -7502,7 +7333,7 @@ function getPlaceholderColor($icon_type) {
             tooltipSprite.position.set(vector.x, vector.y + yOffset, vector.z);
           }
         }
-        
+
         if (!found) {
           controls.autoRotate = true;
           if (intersectedObject) {
@@ -7513,30 +7344,30 @@ function getPlaceholderColor($icon_type) {
           }
           tooltipSprite.visible = false;
         }
-        
+
         controls.update();
         starField.rotation.y += 0.0002;
         galaxy.rotation.y -= 0.0005;
-        
+
         // Update Space Planets Orbit & Rotation
         orbitingPlanets.forEach(p => {
           p.group.position.x = Math.cos(time * p.speed) * p.radius;
           p.group.position.z = Math.sin(time * p.speed) * p.radius;
           p.group.rotation.y += p.rotY;
         });
-        
+
         // --- NEW: Update Astronaut Orbit & Interactions ---
         if (astronaut) {
           // 1. Roll / Flip State
           if (astronaut.userData.isDoingRoll) {
             astronaut.userData.rollProgress += 0.04;
             astronaut.rotation.x = astronaut.userData.rollProgress * Math.PI * 2;
-            
+
             // scale up flames during spin
             const pulseScale = 1.0 + Math.sin(astronaut.userData.rollProgress * Math.PI) * 2.5;
             astronaut.userData.leftFlame.scale.set(1, pulseScale, 1);
             astronaut.userData.rightFlame.scale.set(1, pulseScale, 1);
-            
+
             if (astronaut.userData.rollProgress >= 1) {
               astronaut.userData.isDoingRoll = false;
               astronaut.rotation.x = 0;
@@ -7544,7 +7375,7 @@ function getPlaceholderColor($icon_type) {
               astronaut.userData.rightFlame.scale.set(1, 1, 1);
             }
           }
-          
+
           // 2. Waving State
           if (astronaut.userData.isWaving) {
             astronaut.userData.waveProgress += 0.1;
@@ -7554,7 +7385,7 @@ function getPlaceholderColor($icon_type) {
               astronaut.userData.rightArm.rotation.z = -Math.PI / 6;
             }
           }
-          
+
           // 3. Teleport State
           if (astronaut.userData.isTeleporting) {
             astronaut.userData.teleportProgress += 0.08;
@@ -7574,7 +7405,7 @@ function getPlaceholderColor($icon_type) {
               astronaut.scale.set(1, 1, 1);
             }
           }
-          
+
           // 4. Thruster Flame Pulsation
           if (!astronaut.userData.isDoingRoll) {
             const flickerL = 0.8 + Math.random() * 0.4;
@@ -7582,13 +7413,13 @@ function getPlaceholderColor($icon_type) {
             astronaut.userData.leftFlame.scale.set(1, flickerL, 1);
             astronaut.userData.rightFlame.scale.set(1, flickerR, 1);
           }
-          
+
           // 5. Zero-G Drifting Orbit
           const orbitAngle = time * astronaut.userData.speed;
           const pathX = Math.cos(orbitAngle) * astronaut.userData.orbitRadiusX + Math.sin(time * 0.5) * 1.5;
           const pathZ = Math.sin(orbitAngle) * astronaut.userData.orbitRadiusZ + Math.cos(time * 0.35) * 1.5;
           const pathY = astronaut.userData.targetY + Math.sin(time * 1.5) * 1.2;
-          
+
           if (isDraggingAstro) {
             // Look towards the center platform during drag
             const lookTarget = new THREE.Vector3(0, 3, 0);
@@ -7598,34 +7429,34 @@ function getPlaceholderColor($icon_type) {
             astronaut.position.x = lerp(astronaut.position.x, pathX, 0.08);
             astronaut.position.y = lerp(astronaut.position.y, pathY, 0.08);
             astronaut.position.z = lerp(astronaut.position.z, pathZ, 0.08);
-            
+
             // Auto-orientation along path
             const nextAngle = (time + 0.02) * astronaut.userData.speed;
             const nextX = Math.cos(nextAngle) * astronaut.userData.orbitRadiusX + Math.sin((time + 0.02) * 0.5) * 1.5;
             const nextZ = Math.sin(nextAngle) * astronaut.userData.orbitRadiusZ + Math.cos((time + 0.02) * 0.35) * 1.5;
             const nextY = astronaut.userData.targetY + Math.sin((time + 0.02) * 1.5) * 1.2;
-            
+
             const forwardVec = new THREE.Vector3(
               nextX - astronaut.position.x,
               nextY - astronaut.position.y,
               nextZ - astronaut.position.z
             ).normalize();
-            
+
             const targetLook = new THREE.Vector3().copy(astronaut.position).add(forwardVec);
             astronaut.lookAt(targetLook);
-            
+
             // Tilting/banking into turn
             const turnCurvature = Math.sin(orbitAngle);
             astronaut.rotation.z = turnCurvature * 0.25;
           }
-          
+
           // Keep text bubble above astronaut
           if (activeAstroSprite) {
             activeAstroSprite.position.copy(astronaut.position);
             activeAstroSprite.position.y += 2.2;
           }
         }
-        
+
         // Language Floating (Hanya sumbu Y karena Z dikunci user)
         interactiveGroup.children.forEach(child => {
           if (child.userData.isLanguage) {
@@ -7633,10 +7464,11 @@ function getPlaceholderColor($icon_type) {
             child.position.y = child.userData.originalY + floatY;
           }
         });
-        
+
         composer.render();
       }
-      
+
+      composer.render();
       animate();
     }
 

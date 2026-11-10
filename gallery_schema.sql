@@ -24,18 +24,10 @@ ALTER TABLE public.portfolio_gallery ENABLE ROW LEVEL SECURITY;
 
 -- 3. Security Policies
 -- Policy A: Allow anyone to read visible gallery items
-CREATE POLICY "Allow public read access to gallery" 
-ON public.portfolio_gallery 
-FOR SELECT 
-USING (is_visible = true OR auth.role() = 'authenticated');
+-- Policies are installed by migrations/001_public_access.sql.
 
 -- Policy B: Allow logged-in admin full access (for dashboard management)
-CREATE POLICY "Allow admin full access to gallery" 
-ON public.portfolio_gallery 
-FOR ALL 
-TO authenticated 
-USING (true) 
-WITH CHECK (true);
+-- Policies are installed by migrations/001_public_access.sql.
 
 -- 4. Initial Seed Data (Matching index.html static cards)
 INSERT INTO public.portfolio_gallery (category, title, sub_category, description, image_url, github_url, live_url, detail_url, icon_type, sort_order) VALUES

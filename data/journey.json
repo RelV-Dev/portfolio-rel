@@ -1,0 +1,68 @@
+{
+  "unair": {
+    "title": "Universitas Airlangga",
+    "year": "2026 - Present",
+    "icon": "<i class=\"fas fa-university\"></i>",
+    "achievements": [
+      "Terpilih sebagai Google Student Ambassador — mewakili Google di Universitas Airlangga dan menggerakkan mahasiswa/siswa terhadap teknologi, program, dan inisiatif Google (Okt 2026 - Sekarang)."
+    ],
+    "certs": [
+      {
+        "url": "",
+        "title": "Google Student Ambassador"
+      }
+    ]
+  },
+  "smp": {
+    "title": "SMP Negeri 4 Pati",
+    "year": "2019 - 2022",
+    "icon": "<i class=\"fas fa-microchip\"></i>",
+    "achievements": [
+      "Mulai mendalami dasar logika pemrograman secara otodidak.",
+      "Mengikuti olimpiade komputer tingkat kabupaten/provinsi.",
+      "Aktif dalam klub TIK sekolah dan membantu layouting majalah dinding digital."
+    ],
+    "certs": []
+  },
+  "sma": {
+    "title": "SMA Negeri 3 Pati",
+    "year": "2023 - Present",
+    "icon": "<i class=\"fas fa-graduation-cap\"></i>",
+    "achievements": [
+      "Juara 1 Lomba Karya Tulis Ilmiah (KTI) Tingkat Nasional IEEE Competition 2025 Universitas Brawijaya.",
+      "Juara 1 Desain Poster Digital FLS3N Tingkat Kabupaten Pati 2025 yang diselenggarakan oleh Puspresnas.",
+      "Juara 2 IoT & Networking Competition Tingkat Nasional 2025 yang diselenggarakan oleh Politeknik Elektronika Negeri Surabaya (PENS).",
+      "Juara 3 Lomba Karya Tulis Ilmiah (KTI) UAD Fair 2025 tingkat DIY-Jawa Tengah bidang Fisika Terapan dan Rekayasa yang diselenggarakan oleh Universitas Ahmad Dahlan (UAD).",
+      "Juara Harapan 2 Karya Tulis Ilmiah Kreativitas dan Inovasi Masyarakat (KRENOVA) Tingkat Kabupaten Pati bidang Rekayasa Energi Manufaktur yang diselenggarakan oleh Bappeda.",
+      "Finalis KRENOVA Tingkat Provinsi Jawa Tengah mewakili Kabupaten Pati yang diselenggarakan oleh Brida Provinsi Jawa Tengah.",
+      "Gold Medal Indonesian Advance Science Competition (IASC) bidang Informatika yang diselenggarakan oleh Fosnas."
+    ],
+    "orgs": [
+      "Ketua SMAGA English Association (SEA) Periode 2024/2025.",
+      "Ketua Ekstrakurikuler Karya Ilmiah Remaja (KIR) Periode 2025/2026.",
+      "Koordinator OSIS Seksi Bidang Ilmu Teknologi Informasi, Komunikasi, serta Publikasi dan Dokumentasi (PDD) Periode 2024/2025.",
+      "Koordinator Divisi IT dan Publikasi Program DISAWIDHA ADIWIYATA SMA Negeri 3 Pati Tahun 2025.",
+      "Anggota Ekstrakurikuler Jurnalistik SMA Negeri 3 Pati Periode 2023/2024.",
+      "Anggota Ekstrakurikuler Majalah Dinding (Mading) SMA Negeri 3 Pati Periode 2025/2026.",
+      "Ketua Divisi IT pada Event SMAGADAY Tahun 2024."
+    ],
+    "certs": [
+      {
+        "url": "https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841890/vr8n9ecgmxknyt3ugv9q.webp",
+        "title": "Juara 1 Nasional KTI IEEE Fest UB"
+      },
+      {
+        "url": "https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841893/tasbvk8xwlygb71niqsz.webp",
+        "title": "Juara 2 Nasional TechnoFair App Dev"
+      },
+      {
+        "url": "https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841891/b0gjexr0kwsjdvopbyfg.webp",
+        "title": "Juara 1 FLS3N Kab. Pati"
+      },
+      {
+        "url": "https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841894/e0wjlmiyh2lrhkzwrup5.webp",
+        "title": "Juara 3 KTI UAD DIY-Jateng"
+      }
+    ]
+  }
+}

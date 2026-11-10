@@ -8,9 +8,31 @@
     },
     "api/info.php": {
       "runtime": "vercel-php@0.9.0"
+    },
+    "api/chat.php": {
+      "runtime": "vercel-php@0.9.0"
+    },
+    "api/guestbook.php": {
+      "runtime": "vercel-php@0.9.0"
     }
   },
   "routes": [
+    {
+      "src": "/portfolio-ui.js",
+      "dest": "/portfolio-ui.js"
+    },
+    {
+      "src": "/api/guestbook.php",
+      "dest": "/api/guestbook.php"
+    },
+    {
+      "src": "/api/chat.php",
+      "dest": "/api/chat.php"
+    },
+    {
+      "src": "/portfolio.css",
+      "dest": "/portfolio.css"
+    },
     {
       "src": "/clear_cache.php",
       "dest": "/api/clear_cache.php"
