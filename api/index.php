@@ -1,5 +1,14 @@
 <?php
 require_once __DIR__ . '/../config.php';
+// Unknown paths must not be indexed as copies of the homepage.
+$requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+if (!in_array($requestPath, ['/', '/api/index.php'], true)) {
+    http_response_code(404);
+    header('X-Robots-Tag: noindex');
+    echo '<!doctype html><html lang="id"><meta charset="utf-8"><title>Halaman tidak ditemukan | RelV</title><h1>Halaman tidak ditemukan</h1><a href="/">Kembali ke portofolio</a></html>';
+    exit;
+}
+
 
 require_once __DIR__ . '/../lib/public-data.php';
 header('Cache-Control: no-store');
@@ -56,14 +65,18 @@ function getPlaceholderColor($icon_type) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Farel Putra Firmansyah | Student Developer, Tech Achiever & IT Leader</title>
+  <title>Farel Putra Firmansyah | Portofolio Developer &amp; Desainer</title>
 
-  <meta name="description" content="Official portfolio of Farel Putra Firmansyah — Google Student Ambassador, student developer at SMA Negeri 3 Pati with national tech achievements (IEEE Fest, FLS3N Poster, IONIC PENS, KRENOVA, IASC) and leadership roles (Ketua SEA, Ketua KIR).">
+  <meta name="description" content="Portofolio Farel Putra Firmansyah: proyek web dan IoT, desain visual, prestasi, serta perjalanan pendidikan. Jelajahi karya dan hubungi untuk kolaborasi.">
   <meta name="keywords" content="Farel Putra Firmansyah, Google Student Ambassador, student developer Indonesia, Farel SMA 3 Pati, IEEE Competition 2025, FLS3N Poster Pati, IONIC PENS 2025, KRENOVA Pati, IASC Informatika, SEA SMAGA, KIR SMAGA, OSIS SMAN 3 Pati, student research club">
   <meta name="author" content="Farel Putra Firmansyah">
-  <meta name="robots" content="index, follow">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta property="og:locale" content="id_ID">
+  <meta property="og:site_name" content="RelV — Farel Putra Firmansyah">
+  <meta property="og:image:alt" content="Portofolio Farel Putra Firmansyah">
+  <meta name="twitter:image:alt" content="Portofolio Farel Putra Firmansyah">
 
-  <link rel="canonical" href="https://relv.biz.id">
+  <link rel="canonical" href="https://relv.biz.id/">
 
   <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
   <link rel="preconnect" href="https://data-id-card.vercel.app" crossorigin>
@@ -73,223 +86,40 @@ function getPlaceholderColor($icon_type) {
   <link rel="apple-touch-icon" sizes="180x180" href="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841884/vfduze9bhb5zap8au4bh.png">
 
   <!-- Open Graph (SEO + Beasiswa) -->
-  <meta property="og:title" content="Farel Putra Firmansyah | Student Developer & Technology Achiever">
-  <meta property="og:description" content="Google Student Ambassador & student portfolio highlighting academic journey, national and international technology achievements, projects, certificates, and research-oriented development.">
+  <meta property="og:title" content="Farel Putra Firmansyah | Portofolio Developer &amp; Desainer">
+  <meta property="og:description" content="Portofolio Farel Putra Firmansyah: proyek web dan IoT, desain visual, prestasi, serta perjalanan pendidikan. Jelajahi karya dan hubungi untuk kolaborasi.">
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://relv.biz.id">
+  <meta property="og:url" content="https://relv.biz.id/">
   <meta property="og:image" content="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841885/x3esj1090dipra4braiq.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Farel Putra Firmansyah | Student Developer & Technology Achiever">
-  <meta name="twitter:description" content="Portfolio showcasing academic journey, technology projects, competitions, and certifications.">
+  <meta name="twitter:title" content="Farel Putra Firmansyah | Portofolio Developer &amp; Desainer">
+  <meta name="twitter:description" content="Portofolio Farel Putra Firmansyah: proyek web dan IoT, desain visual, prestasi, serta perjalanan pendidikan. Jelajahi karya dan hubungi untuk kolaborasi.">
   <meta name="twitter:image" content="https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841885/x3esj1090dipra4braiq.png">
 
   <!-- SEO DB -->
   <script type="application/ld+json">
     <?php
-    $projectsSchema = [];
+    $personId = 'https://relv.biz.id/#person';
+    $schema = ['@context'=>'https://schema.org', '@graph'=>[
+      ['@type'=>'Person', '@id'=>$personId, 'name'=>'Farel Putra Firmansyah', 'alternateName'=>'RelV',
+       'url'=>'https://relv.biz.id/', 'image'=>'https://res.cloudinary.com/dvpq5fsef/image/upload/c_fill,g_auto,w_400,h_400,q_auto,f_auto/v1780844527/dvpyazydsd46jzrvu6bq.webp',
+       'sameAs'=>['https://github.com/RelV-Dev','https://www.instagram.com/zx_frl'], 'award'=>$person_awards],
+      ['@type'=>'WebSite','@id'=>'https://relv.biz.id/#website','url'=>'https://relv.biz.id/','name'=>'RelV — Portofolio Farel Putra Firmansyah','inLanguage'=>'id-ID','publisher'=>['@id'=>$personId]],
+      ['@type'=>'ProfilePage','@id'=>'https://relv.biz.id/#webpage','url'=>'https://relv.biz.id/', 'name'=>'Portofolio Farel Putra Firmansyah', 'inLanguage'=>'id-ID',
+       'isPartOf'=>['@id'=>'https://relv.biz.id/#website'], 'mainEntity'=>['@id'=>$personId]]
+    ]];
     foreach ($projects as $item) {
-        $projectsSchema[] = [
-            "@type" => "CreativeWork",
-            "name" => $item['title'],
-            "description" => $item['description'],
-            "creator" => [
-                "@id" => "https://relv.biz.id/#person"
-            ]
-        ];
+      $work = ['@type'=>'CreativeWork', '@id'=>'https://relv.biz.id/#work-'.(int)$item['id'],
+        'url'=>'https://relv.biz.id/#work-'.(int)$item['id'], 'name'=>$item['title'],
+        'description'=>$item['description'], 'creator'=>['@id'=>$personId]];
+      if (public_url($item['image_url'] ?? '')) $work['image']=public_url($item['image_url']);
+      $schema['@graph'][]=$work;
     }
-
-    $awardsSchema = [];
-    foreach ($awards as $item) {
-        $awardedBy = "Various Organizations";
-        if (preg_match('/Dikeluarkan oleh ([^.]+)/u', $item['description'], $matches)) {
-            $awardedBy = trim($matches[1]);
-        } elseif (preg_match('/Diselenggarakan oleh ([^.]+)/u', $item['description'], $matches)) {
-            $awardedBy = trim($matches[1]);
-        }
-        $awardsSchema[] = [
-            "@type" => "Award",
-            "name" => $item['title'],
-            "awardedBy" => [
-                "@type" => "Organization",
-                "name" => $awardedBy
-            ]
-        ];
-    }
-
-    $certificatesSchema = [];
-    foreach ($certificates as $item) {
-        $recognizedBy = "Various Organizations";
-        if (preg_match('/by ([^.]+)/i', $item['description'], $matches)) {
-            $recognizedBy = trim($matches[1]);
-        } elseif (preg_match('/provided by ([^.]+)/i', $item['description'], $matches)) {
-            $recognizedBy = trim($matches[1]);
-        } elseif (preg_match('/oleh ([^.]+)/u', $item['description'], $matches)) {
-            $recognizedBy = trim($matches[1]);
-        }
-        $certificatesSchema[] = [
-            "@type" => "EducationalOccupationalCredential",
-            "name" => $item['title'],
-            "recognizedBy" => [
-                "@type" => "Organization",
-                "name" => $recognizedBy
-            ]
-        ];
-    }
-
-    $schema = [
-      "@context" => "https://schema.org",
-      "@graph" => [
-        [
-          "@type" => "Person",
-          "@id" => "https://relv.biz.id/#person",
-          "name" => "Farel Putra Firmansyah",
-          "url" => "https://relv.biz.id",
-          "image" => "https://res.cloudinary.com/dvpq5fsef/image/upload/c_fill,g_auto,w_600,h_600,q_auto,f_auto/v1780844527/dvpyazydsd46jzrvu6bq.webp",
-          "description" => "Student developer, tech enthusiast, and competitive programmer with experience in web development, IoT systems, data science, and visual design.",
-          "knowsAbout" => [
-            "Web Development", "JavaScript", "Next.js", "Python", "C++", "SQL", "Firebase", "Supabase",
-            "Internet of Things", "Machine Learning", "Data Science", "Competitive Programming", "Cybersecurity",
-            "Visual Design", "Video Editing"
-          ],
-          "hasOccupation" => [
-            [
-              "@type" => "Occupation",
-              "name" => "Google Student Ambassador",
-              "occupationLocation" => [
-                "@type" => "Country",
-                "name" => "Indonesia"
-              ],
-              "startDate" => "2026-10",
-              "description" => "Representing Google at Universitas Airlangga"
-            ]
-          ],
-          "sameAs" => [
-            "https://github.com/RelV-Dev",
-            "https://instagram.com/zx_frl"
-          ],
-          "affiliation" => [
-            [
-              "@type" => "EducationalOrganization",
-              "name" => "SMA Negeri 3 Pati"
-            ],
-            [
-              "@type" => "CollegeOrUniversity",
-              "name" => "Universitas Airlangga",
-              "description" => "Google Student Ambassador (Okt 2026 - Present)"
-            ]
-          ],
-          "award" => $person_awards,
-          "memberOf" => [
-            [
-              "@type" => "Organization",
-              "name" => "Google Student Ambassador",
-              "description" => "Student Ambassador representing Google at Universitas Airlangga, engaging students with Google's technologies, programs, and initiatives (Okt 2026 - Present)",
-              "parentOrganization" => [
-                "@type" => "CollegeOrUniversity",
-                "name" => "Universitas Airlangga"
-              ]
-            ],
-            [
-              "@type" => "Organization",
-              "name" => "SMAGA English Association (SEA)",
-              "description" => "Ketua (Periode 2024/2025)"
-            ],
-            [
-              "@type" => "Organization",
-              "name" => "Ekstrakurikuler Karya Ilmiah Remaja (KIR) SMA Negeri 3 Pati",
-              "description" => "Ketua (Periode 2025/2026)"
-            ],
-            [
-              "@type" => "Organization",
-              "name" => "OSIS SMA Negeri 3 Pati",
-              "description" => "Koordinator Seksi Bidang Ilmu Teknologi Informasi, Komunikasi, serta Publikasi dan Dokumentasi (PDD) (Periode 2024/2025)"
-            ],
-            [
-              "@type" => "Organization",
-              "name" => "Program DISAWIDHA ADIWIYATA SMA Negeri 3 Pati",
-              "description" => "Koordinator Divisi IT dan Publikasi (Tahun 2025)"
-            ],
-            [
-              "@type" => "Organization",
-              "name" => "Ekstrakurikuler Jurnalistik SMA Negeri 3 Pati",
-              "description" => "Anggota (Periode 2023/2024)"
-            ],
-            [
-              "@type" => "Organization",
-              "name" => "Ekstrakurikuler Majalah Dinding (Mading) SMA Negeri 3 Pati",
-              "description" => "Anggota (Periode 2025/2026)"
-            ],
-            [
-              "@type" => "Organization",
-              "name" => "SMAGADAY 2024",
-              "description" => "Ketua Divisi IT"
-            ]
-          ]
-        ],
-        [
-          "@type" => "WebSite",
-          "@id" => "https://relv.biz.id/#website",
-          "url" => "https://relv.biz.id",
-          "name" => "Farel Putra Firmansyah – Portfolio",
-          "description" => "Personal portfolio website showcasing projects, awards, certificates, and interactive technical visualizations.",
-          "publisher" => [
-            "@id" => "https://relv.biz.id/#person"
-          ],
-          "inLanguage" => ["id-ID", "en-US"]
-        ],
-        [
-          "@type" => "WebPage",
-          "@id" => "https://relv.biz.id/#webpage",
-          "url" => "https://relv.biz.id",
-          "name" => "Farel Putra Firmansyah Portfolio",
-          "isPartOf" => [
-            "@id" => "https://relv.biz.id/#website"
-          ],
-          "about" => [
-            "@id" => "https://relv.biz.id/#person"
-          ],
-          "primaryImageOfPage" => [
-            "@type" => "ImageObject",
-            "url" => "https://res.cloudinary.com/dvpq5fsef/image/upload/v1780841885/x3esj1090dipra4braiq.png"
-          ]
-        ],
-        [
-          "@type" => "ItemList",
-          "@id" => "https://relv.biz.id/#projects",
-          "name" => "Projects Portfolio",
-          "itemListElement" => $projectsSchema
-        ],
-        [
-          "@type" => "ItemList",
-          "@id" => "https://relv.biz.id/#awards",
-          "name" => "Awards and Achievements",
-          "itemListElement" => $awardsSchema
-        ],
-        [
-          "@type" => "ItemList",
-          "@id" => "https://relv.biz.id/#certificates",
-          "name" => "Professional Certifications",
-          "itemListElement" => $certificatesSchema
-        ],
-        [
-          "@type" => "Service",
-          "@id" => "https://relv.biz.id/#freelance",
-          "name" => "Freelance Development Services",
-          "provider" => [
-            "@id" => "https://relv.biz.id/#person"
-          ],
-          "serviceType" => ["Web Development", "IoT Development", "UI/UX Design", "Data Science", "Video Editing"],
-          "areaServed" => "ID",
-          "description" => "Professional freelance services in web development, IoT systems, design, data science, and video editing with proven client testimonials."
-        ]
-      ]
-    ];
-
-    echo json_encode($schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    echo json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_INVALID_UTF8_SUBSTITUTE);
     ?>
   </script>
 
@@ -297,7 +127,7 @@ function getPlaceholderColor($icon_type) {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="/assets/icons/icons.css">
 
   <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet" media="print" onload="this.media='all'">
 
@@ -3919,7 +3749,7 @@ function getPlaceholderColor($icon_type) {
 </head>
 
 <body>
-  <a href="#home" class="skip-link">Lewati ke konten utama</a>
+  <a href="#home" class="skip-link" data-nosnippet>Lewati ke konten utama</a>
   <div id="scrollProgress" aria-hidden="true"></div>
   <div id="preloader" hidden>
     <div class="preloader-particles" id="preloaderParticles"></div>
@@ -3937,7 +3767,7 @@ function getPlaceholderColor($icon_type) {
   <canvas id="cursorCanvas" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9998;"></canvas>
 
   <nav aria-label="Main navigation">
-    <a href="https://relv.biz.id" class="logo">
+    <a href="https://relv.biz.id/" class="logo">
       <i class="fas fa-code"></i> RelV
     </a>
 
@@ -3956,7 +3786,7 @@ function getPlaceholderColor($icon_type) {
     </ul>
   </nav>
 
-  <section id="home" class="hero">
+  <section id="home" class="hero" tabindex="-1">
     <div class="hero-content">
       <div class="hero-text" data-aos="fade-right" data-aos-duration="1000">
         <span class="hero-greeting"><span class="availability-dot" aria-hidden="true"></span> PENGEMBANG · DESAINER</span>
@@ -3990,7 +3820,7 @@ function getPlaceholderColor($icon_type) {
       <div class="hero-image-container" data-aos="fade-left" data-aos-duration="1000"><span class="portrait-caption">KREATIVITAS &amp; TEKNOLOGI</span>
         <div class="image-wrapper">
           <div class="image-glow"></div>
-          <img src="https://res.cloudinary.com/dvpq5fsef/image/upload/c_fill,g_auto,w_400,h_400,q_auto,f_auto/v1780844527/dvpyazydsd46jzrvu6bq.webp" alt="Farel Putra" class="profile-img">
+          <img src="https://res.cloudinary.com/dvpq5fsef/image/upload/c_fill,g_auto,w_400,h_400,q_auto,f_auto/v1780844527/dvpyazydsd46jzrvu6bq.webp" alt="Farel Putra Firmansyah" class="profile-img" width="400" height="400" fetchpriority="high" decoding="async">
         </div>
       </div>
     </div>
@@ -6245,41 +6075,81 @@ function getPlaceholderColor($icon_type) {
       });
     }
 
+    const githubScriptLoads = new Map();
     let githubLoadPromise;
+    function loadGithubScript(src) {
+      if (!githubScriptLoads.has(src)) {
+        const pending = new Promise((resolve,reject) => {
+          const script=document.createElement('script');
+          const fail=()=>{clearTimeout(timeout);script.remove();reject(new Error('Dependency unavailable'));};
+          const timeout=setTimeout(fail,10000);
+          script.src=src;
+          script.onload=()=>{clearTimeout(timeout);resolve();};
+          script.onerror=fail;
+          document.head.appendChild(script);
+        }).catch(error=>{githubScriptLoads.delete(src);throw error;});
+        githubScriptLoads.set(src,pending);
+      }
+      return githubScriptLoads.get(src);
+    }
     function loadGithubDependencies() {
       if (!githubLoadPromise) githubLoadPromise = (async () => {
-        for (const src of ["https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js", "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js", "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js", "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js", "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js", "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js", "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js", "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"]) {
-          if (Array.from(document.scripts).some(script => script.src===src && script.dataset.loaded==='true')) continue;
-          await new Promise((resolve,reject) => { const script=document.createElement('script'); const timeout=setTimeout(()=>{script.remove();reject(new Error('Dependency timeout'));},10000); script.src=src; script.onload=()=>{clearTimeout(timeout);script.dataset.loaded='true';resolve();}; script.onerror=()=>{clearTimeout(timeout);script.remove();reject(new Error('Dependency unavailable'));}; document.head.appendChild(script); });
-        }
-      })().catch(error => { githubLoadPromise=null; throw error; });
+        const base='https://cdn.jsdelivr.net/npm/three@0.128.0/';
+        await loadGithubScript(base+'build/three.min.js');
+        // EffectComposer defines THREE.Pass, which the other postprocessing classes extend.
+        await loadGithubScript(base+'examples/js/postprocessing/EffectComposer.js');
+        await Promise.all([
+          'controls/OrbitControls.js', 'shaders/CopyShader.js', 'shaders/LuminosityHighPassShader.js',
+          'postprocessing/RenderPass.js', 'postprocessing/ShaderPass.js', 'postprocessing/UnrealBloomPass.js'
+        ].map(path=>loadGithubScript(base+'examples/js/'+path)));
+      })().catch(error=>{githubLoadPromise=null;throw error;});
       return githubLoadPromise;
     }
-    const githubLoadButton = document.createElement('button');
-    githubLoadButton.className = 'hero-cta'; githubLoadButton.textContent = 'Muat visualisasi interaktif';
-    document.getElementById('github-3d-canvas').replaceChildren(githubLoadButton);
-    githubLoadButton.addEventListener('click', async () => { githubLoadButton.disabled=true; await initGithub3D(); });
+    const githubContainer=document.getElementById('github-3d-canvas');
+    const githubLoadButton=document.createElement('button');
+    const githubLoadingStatus=document.createElement('p');
+    githubLoadButton.className='hero-cta'; githubLoadButton.textContent='Muat visualisasi interaktif';
+    githubLoadingStatus.setAttribute('role','status');
+    githubContainer.replaceChildren(githubLoadButton);
+    let githubInitializing=false, githubInitialized=false;
+    githubLoadButton.addEventListener('click', initGithub3D);
+    // Begin downloading before the visitor reaches the canvas. Respect data/motion preferences.
+    if (!navigator.connection?.saveData && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const githubPreloadObserver=new IntersectionObserver(entries=>{
+        if (entries.some(entry=>entry.isIntersecting)) { githubPreloadObserver.disconnect(); initGithub3D(); }
+      }, {rootMargin:'600px 0px',threshold:0});
+      githubPreloadObserver.observe(githubContainer);
+    }
     async function initGithub3D() {
-      const username = 'relv-dev';
-      const container = document.getElementById('github-3d-canvas');
-
+      if (githubInitializing || githubInitialized) return;
+      githubInitializing=true; githubLoadButton.disabled=true;
+      githubContainer.setAttribute('aria-busy','true');
+      githubLoadingStatus.textContent='Menyiapkan visualisasi GitHub…';
+      githubContainer.replaceChildren(githubLoadingStatus);
       try {
-        const response = await fetch(`https://github-stats-api-tau.vercel.app/api/github-stats?username=${username}`, {signal:AbortSignal.timeout(12000)});
-        if (!response.ok) throw new Error('GitHub data unavailable');
-        await loadGithubDependencies();
-        const data = await response.json();
-
-        document.getElementById('gh-username').innerText = `@${data.username}`;
-        document.getElementById('gh-repos').innerText = data.totalRepos;
-        document.getElementById('gh-commits').innerText = data.totalCommits;
-        document.getElementById('gh-contributions').innerText = data.contributionsCurrentYear;
-
-        // UPDATE DI SINI: Kirim 'data.topLanguages' sebagai parameter ke-4
-        render3DScene(data.contributionGraph, container, data.totalCommits, data.topLanguages);
-
-      } catch (error) {
-        console.error("Error fetching Github data:", error);
-        container.replaceChildren(document.createTextNode('Visualisasi belum berhasil dimuat. '), githubLoadButton); githubLoadButton.disabled=false; githubLoadButton.textContent='Coba lagi';
+        const [data]=await Promise.all([
+          (async()=>{
+            const response=await fetch('https://github-stats-api-tau.vercel.app/api/github-stats?username=relv-dev', {signal:AbortSignal.timeout(12000)});
+            if (!response.ok) throw new Error('GitHub data unavailable');
+            const data=await response.json();
+            if (!Array.isArray(data.contributionGraph)) throw new Error('Invalid GitHub data');
+            return data;
+          })(),
+          loadGithubDependencies()
+        ]);
+        document.getElementById('gh-username').textContent=`@${data.username}`;
+        document.getElementById('gh-repos').textContent=data.totalRepos;
+        document.getElementById('gh-commits').textContent=data.totalCommits;
+        document.getElementById('gh-contributions').textContent=data.contributionsCurrentYear;
+        render3DScene(data.contributionGraph, githubContainer, data.totalCommits, data.topLanguages);
+        githubInitialized=true;
+      } catch(error) {
+        console.warn('GitHub visualization unavailable:',error.message);
+        githubLoadingStatus.textContent='Visualisasi belum berhasil dimuat.';
+        githubLoadButton.textContent='Coba lagi'; githubLoadButton.disabled=false;
+        githubContainer.replaceChildren(githubLoadingStatus,githubLoadButton);
+      } finally {
+        githubInitializing=false; githubContainer.setAttribute('aria-busy','false');
       }
     }
 
@@ -6937,7 +6807,7 @@ function getPlaceholderColor($icon_type) {
           originalColor: material.color.clone(),
           originalEmissive: material.emissiveIntensity,
           isHovered: false,
-          delay: index * 0.5
+          delay: index * 0.08
         };
         chartGroup.add(cube);
         day++;
@@ -7270,17 +7140,17 @@ function getPlaceholderColor($icon_type) {
                 child.scale.z += (targetScaleXZ - child.scale.z) * 0.1;
               }
             }
-            if (child.name === "subLabel" && animFrame > 100) {
+            if (child.name === "subLabel" && animFrame > 18) {
               child.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
             }
           });
 
           // 3. Texts Pop Up (Main Title & Languages)
           interactiveGroup.children.forEach(child => {
-            if (child.name === "mainTitle" && animFrame > 80) {
+            if (child.name === "mainTitle" && animFrame > 12) {
               child.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
             }
-            if (child.userData.isLanguage && animFrame > 120) {
+            if (child.userData.isLanguage && animFrame > 24) {
               // Animasi Scale dari 0 ke 1 (atau 1.2 jika hover)
               const targetScale = child.userData.isHovered ? 1.2 : 1.0;
               child.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);

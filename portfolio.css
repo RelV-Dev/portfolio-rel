@@ -81,3 +81,7 @@ section { scroll-margin-top: 110px; }
 @media(max-width:768px) { .featured-project { grid-template-columns:1fr; gap:22px; } .featured-project .hero-actions { justify-content:flex-start; } }
 .menu-toggle { appearance:none; background:transparent; border:0; padding:8px; border-radius:8px; min-width:44px; min-height:44px; }
 .menu-toggle:focus-visible { outline:2px solid #8ef3ec; outline-offset:2px; }
+
+/* Keep the skip link available to keyboards without flashing on initial paint. */
+.skip-link:not(:focus) { position:fixed; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.skip-link:focus { position:fixed; left:12px; top:12px; z-index:100000; width:auto; height:auto; margin:0; padding:12px 18px; clip-path:none; }

@@ -8,7 +8,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') respond(200, ['ready'=>(boo
 $data = api_body();
 $message = $data['message'] ?? null;
 if (!is_string($message) || trim($message)==='' || mb_strlen($message)>1000) respond(400, ['error'=>'Isi pesan antara 1 dan 1.000 karakter.']);
-if (!$key) respond(503, ['error'=>'Assistant belum dikonfigurasi. Silakan hubungi Farel melalui kontak di website.']);
+if (!$key) { error_log('Portfolio configuration missing: APINEX_API_KEY'); respond(503, ['error'=>'Assistant belum dikonfigurasi. Silakan hubungi Farel melalui kontak di website.', 'code'=>'configuration_missing']); }
 enforce_rate_limit('chat', 10, 60);
 $sources = portfolio_sources();
 $context = $data['previous_source_ids'] ?? [];
@@ -23,7 +23,7 @@ $payload = ['model'  => getenv('APINEX_MODEL') ?: 'gpt-6.1-sol', 'temperature' =
 $ch = curl_init('https://api.apinex.bond/v1/chat/completions');
 curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 25,
     CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $key, 'Content-Type: application/json'], CURLOPT_POSTFIELDS => json_encode($payload)]);
-$result = curl_exec($ch); $status = curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+$result = curl_exec($ch); $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 if ($result === false || $status < 200 || $status >= 300) respond(502, ['error' => 'Assistant sedang tidak tersedia. Silakan coba lagi nanti.']);
 $result = json_decode($result, true);
 $content = $result['choices'][0]['message']['content'] ?? '';

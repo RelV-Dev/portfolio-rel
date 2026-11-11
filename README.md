@@ -100,7 +100,7 @@ or personal roles. Contact actions close the page. The hero introduction avoids
 asserting an unconfirmed current school status; historical timeline dates remain
 unchanged pending owner confirmation.
 
-There is no blocking preloader. Three.js dependencies load only on request,
+There is no blocking preloader. Three.js and GitHub data load in parallel when the canvas approaches the viewport (600px ahead). Reduced-motion and data-saver users retain a manual load button. Independent extensions download concurrently after their base classes, and repeated scrolling reuses the initialized scene;
 rendering pauses offscreen/in hidden tabs, pixel ratio is capped, and ambient
 sound is disabled. Guestbook offers pause/resume and respects reduced motion.
 Dialogs support keyboard activation, Escape, focus trapping and focus restoration.
@@ -108,3 +108,17 @@ Dialogs support keyboard activation, Escape, focus trapping and focus restoratio
 Security references used:
 https://supabase.com/docs/guides/database/postgres/row-level-security
 https://vercel.com/docs/headers/request-headers
+
+## Troubleshooting production HTTP 503
+
+`RATE_LIMIT_SECRET` must be populated in Vercel → Settings → Environment Variables
+for Production, alongside `APINEX_API_KEY` and `SUPABASE_SERVICE_ROLE_KEY`, followed
+by a redeployment. The locally generated `.env.credentials.local` is ignored by
+Git and deployment; copy only its RATE_LIMIT_SECRET value into Vercel. It is not
+loaded automatically by PHP.
+
+If the POST response has `code: configuration_missing`, inspect Vercel Function
+Logs for the missing variable names (values are never logged). If its code is
+`rate_limit_unavailable`, check that migration 001 has created
+`consume_public_rate_limit`, and that the service role key belongs to this
+Supabase project. Do not disable the limiter to resolve a configuration error.

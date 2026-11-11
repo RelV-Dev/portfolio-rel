@@ -18,6 +18,10 @@
   },
   "routes": [
     {
+      "src": "/assets/icons/(icons.css|LICENSE.txt)",
+      "dest": "/assets/icons/$1"
+    },
+    {
       "src": "/portfolio-ui.js",
       "dest": "/portfolio-ui.js"
     },
