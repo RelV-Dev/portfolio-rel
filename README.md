@@ -131,3 +131,10 @@ Camera presets, pause, and a keyboard date slider expose the actual API data.
 Missing calendar days stay empty. Rendering stops offscreen and in hidden tabs;
 reduced-motion renders a complete static scene with usable camera controls.
 Closing sections use compact spacing, including empty testimonials/guestbook.
+
+The runtime is vendored under `assets/three-r128` with its MIT license. The
+profile universe mounts as soon as these same-origin assets load, independent
+of the GitHub response. Successful GitHub data is cached per browser session
+for five minutes; failures retain profile exploration and expose a retry button.
+Planet information comes from public page content. Orbit mode rotates the camera;
+dragging pauses automatic orbit until Orbit/reset is selected again.

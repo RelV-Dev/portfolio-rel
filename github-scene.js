@@ -27,14 +27,16 @@
     if (container._githubScene) return container._githubScene;
     const T = window.THREE;
     const days = normalizeDays(data.contributionGraph);
-    if (!days.length) throw new Error('Data kontribusi belum tersedia');
+    const hasData = days.length > 0;
+    // Layout reference only: no fabricated bars or contribution values.
+    const referenceDay = {stamp:Date.UTC(2026,0,1)};
     const panel = container.closest('.github-card-container');
     const $ = selector => panel.querySelector(selector);
     const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
     const compact = matchMedia('(max-width: 600px)').matches;
     let reduced = motionQuery.matches, paused = reduced, visible = false, lost = false, disposed = false;
     let frame = 0, lastFrame = 0, elapsed = 0, intro = reduced ? 2 : 0, selected = days.length - 1;
-    let cameraTransition = null, greeting = 0, view = 'orbit';
+    let cameraTransition = null, greeting = 0, flight = 0, orbitEnabled = true, view = 'orbit';
     const cleanups = [];
     const on = (target, event, handler, options) => {
       target.addEventListener(event, handler, options);
@@ -93,9 +95,9 @@
       sprite.position.set(x, y, z); sprite.scale.set(width, width / 8, 1); world.add(sprite); return sprite;
     }
 
-    const first = days[0], last = days[days.length - 1];
+    const first = days[0] || referenceDay, last = days[days.length - 1] || referenceDay;
     const start = first.stamp - new Date(first.stamp).getUTCDay() * DAY;
-    const weeks = Math.floor((last.stamp - start) / (7 * DAY)) + 1;
+    const weeks = hasData ? Math.floor((last.stamp - start) / (7 * DAY)) + 1 : 53;
     const stepX = Math.min(0.43, 21.8 / weeks), stepZ = 0.72;
     const spanX = Math.max(8, weeks * stepX + 2.2), spanZ = 7.2;
     const maxCount = Math.max(1, ...days.map(d => d.count));
@@ -185,13 +187,47 @@
     flame.rotation.x = Math.PI; flame.position.set(0, -0.5, -0.28); astro.add(flame);
     astro.position.set(-spanX / 2 - 1.5, 2.3, 3.1); astro.rotation.y = 0.35;
 
+    // Planet details come from the public page, never from invented personal facts.
+    const textOf=selector=>document.querySelector(selector)?.textContent.trim().replace(/\s+/g,' ') || '';
+    const destinations = [
+      {title:'Profil',href:'#home',text:textOf('.hero-description'),color:0x67d9d0},
+      {title:'Keahlian',href:'#skills',text:Array.from(document.querySelectorAll('#skills .tech-item')).map(el=>el.textContent.trim()).filter(Boolean).slice(0,18).join(' · '),color:0xa296ef},
+      {title:'Karya',href:'#featured',text:Array.from(document.querySelectorAll('#featured h3')).map(el=>el.textContent.trim()).join(' · ') || 'Jelajahi proyek yang ditampilkan di portofolio.',color:0xf0c37b},
+      {title:'GitHub',href:'https://github.com/RelV-Dev',text:'Repositori, commit, dan aktivitas kontribusi RelV-Dev. Pilih batang atau pemilih tanggal untuk membaca kontribusi harian.',color:0x88e3a3}
+    ];
+    const navigation=document.createElement('div'); navigation.className='gh-destinations'; navigation.setAttribute('role','group'); navigation.setAttribute('aria-label','Jelajahi semesta Farel');
+    const detail=document.createElement('div'); detail.className='gh-destination-detail'; detail.hidden=true;
+    const heading=document.createElement('strong'), description=document.createElement('p'), link=document.createElement('a'), close=document.createElement('button');
+    close.type='button'; close.textContent='Tutup'; close.setAttribute('aria-label','Tutup informasi planet');
+    detail.append(heading,description,link,close);
+    container.parentElement.insertBefore(navigation,container); container.parentElement.insertBefore(detail,container.nextSibling);
+    let activeDestination=null;
+    function openDestination(d) {
+      activeDestination=d; heading.textContent=d.title; description.textContent=d.text || 'Informasi tersedia pada bagian ini di website.';
+      link.textContent='Jelajahi '+d.title+' ↗'; link.href=d.href; detail.hidden=false;
+      navigation.querySelectorAll('[aria-pressed]').forEach(b=>b.setAttribute('aria-pressed',String(b.textContent===d.title)));
+    }
+    on(close,'click',()=>{detail.hidden=true; navigation.querySelectorAll('[aria-pressed]').forEach(b=>b.setAttribute('aria-pressed','false')); activeDestination?.button.focus();});
+    on(link,'click',()=>{detail.hidden=true;});
+    destinations.forEach((d,i)=>{
+      d.phase=i*Math.PI/2+0.5;
+      d.mesh=new T.Mesh(new T.IcosahedronGeometry(0.65,2), material(d.color,{emissive:d.color,emissiveIntensity:0.12,roughness:0.45}));
+      d.mesh.position.set(Math.cos(d.phase)*14,2.3,Math.sin(d.phase)*6.7); world.add(d.mesh);
+      d.caption=label(d.title.toUpperCase(),d.mesh.position.x,3.45,d.mesh.position.z,'#d2e7ef',2.8);
+      const button=document.createElement('button');button.type='button';button.textContent=d.title;button.setAttribute('aria-pressed','false');d.button=button;
+      on(button,'click',()=>openDestination(d));navigation.append(button);
+    });
+    const astroButton=document.createElement('button');astroButton.type='button';astroButton.textContent='Astronaut ✧';navigation.append(astroButton);
+
     const selection = new T.LineSegments(new T.EdgesGeometry(box), new T.LineBasicMaterial({ color: 0xf0ffd9 })); chart.add(selection);
     const tooltip = document.createElement('div'); tooltip.className = 'gh-tooltip'; tooltip.hidden = true; tooltip.setAttribute('aria-hidden', 'true'); container.appendChild(tooltip);
     const greetingBubble = document.createElement('div'); greetingBubble.className = 'gh-greeting'; greetingBubble.hidden = true;
     greetingBubble.setAttribute('role', 'status'); greetingBubble.textContent = 'Halo dari orbit! Terus berkarya ✧'; container.appendChild(greetingBubble);
     const slider = $('#gh-day-slider'); slider.max = String(days.length - 1);
-    $('#gh-date-range').textContent = `${shortDate.format(first.stamp)} — ${shortDate.format(last.stamp)}`;
+    $('#gh-date-range').textContent = hasData ? `${shortDate.format(first.stamp)} — ${shortDate.format(last.stamp)}` : 'Menunggu data';
+    slider.disabled = !hasData;
     function selectDay(index, showTip = false) {
+      if (!hasData) return;
       selected = Math.max(0, Math.min(days.length - 1, index));
       const d = days[selected], p = coordinates[selected];
       slider.value = String(selected); slider.setAttribute('aria-valuetext', `${dateFormat.format(d.stamp)}, ${format.format(d.count)} kontribusi`);
@@ -212,7 +248,7 @@
       row.append(dot, name, percent); languages.append(row);
     }
     if (!languageList.length) { const empty = document.createElement('span'); empty.className = 'gh-muted'; empty.textContent = 'Data bahasa belum tersedia'; languages.append(empty); }
-    $('.gh-toolbar').hidden = false; $('.gh-inspector').hidden = false;
+    $('.gh-toolbar').hidden = false; $('.gh-inspector').hidden = !hasData;
     const hint = $('#gh-interaction-hint');
     if (matchMedia('(pointer: coarse)').matches) hint.textContent = 'Sentuh batang · gunakan pemilih tanggal';
     const motionButton = $('#gh-motion');
@@ -227,7 +263,7 @@
       return mode === 'top' ? new T.Vector3(0, distance * 1.08, 0.8) : new T.Vector3(distance * 0.15, distance * 0.67, distance * 0.8);
     }
     function setView(mode, immediate = false) {
-      view = mode; tooltip.hidden = true;
+      view = mode; orbitEnabled = mode === 'orbit'; tooltip.hidden = true;
       controls.target.set(0, 0.7, 0);
       panel.querySelectorAll('[data-gh-view]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.ghView === mode)));
       const target = cameraPosition(mode);
@@ -242,12 +278,21 @@
     }
     const raycaster = new T.Raycaster(), pointer = new T.Vector2();
     let pointerDown = null, dragging = false;
-    function pick(event) {
+    function pick(event, activate = false) {
       if (dragging || intro < 1.6 || lost) return;
       const rect = canvas.getBoundingClientRect();
       pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
       scene.updateMatrixWorld(true); raycaster.setFromCamera(pointer, camera);
-      const hit = raycaster.intersectObject(bars)[0];
+      const target = raycaster.intersectObjects([...destinations.map(d=>d.mesh), astro], true)[0];
+      if (target) {
+        canvas.style.cursor='pointer';
+        if (activate) {
+          const destination=destinations.find(d=>d.mesh===target.object);
+          if (destination) openDestination(destination); else greet();
+        }
+        return;
+      }
+      const hit = hasData ? raycaster.intersectObject(bars)[0] : null;
       if (hit && hit.instanceId !== undefined) selectDay(hit.instanceId, true);
       else tooltip.hidden = true;
       canvas.style.cursor = hit ? 'pointer' : 'grab';
@@ -256,9 +301,9 @@
     on(canvas, 'pointermove', e => {
       if (pointerDown && Math.hypot(e.clientX - pointerDown.x, e.clientY - pointerDown.y) > 5) dragging = true;
       if (e.pointerType === 'mouse' && !pointerDown) pick(e);
-      if (dragging) tooltip.hidden = true;
+      if (dragging) { tooltip.hidden = true; orbitEnabled = false; }
     });
-    on(canvas, 'pointerup', e => { if (!dragging) pick(e); pointerDown = null; dragging = false; });
+    on(canvas, 'pointerup', e => { if (!dragging) pick(e, true); pointerDown = null; dragging = false; });
     on(canvas, 'pointercancel', () => { pointerDown = null; dragging = false; });
     on(canvas, 'pointerleave', () => { pointerDown = null; dragging = false; tooltip.hidden = true; });
     on(slider, 'input', () => selectDay(Number(slider.value)));
@@ -270,11 +315,14 @@
       if (paused) { intro = 2; buildBars(); if (cameraTransition) camera.position.copy(cameraTransition.to); cameraTransition = null; greeting = 0; greetingBubble.hidden = true; controls.update(); }
       updateMotionUI(); invalidate();
     });
-    on($('#gh-greet'), 'click', () => {
-      greeting = 2.6; greetingBubble.hidden = false;
-      if (paused || reduced) { wavingArm.rotation.z = -2.5; renderer.render(scene, camera); }
+    function greet() {
+      greeting = 2.6; flight = (flight + 1) % 3; greetingBubble.hidden = false;
+      greetingBubble.textContent = ['Halo! Pilih planet untuk mengenal Farel.', 'Siap menjelajah! Lihat planet Karya untuk proyek saya.', 'Selamat datang di orbit GitHub saya!'][flight];
+      if (paused || reduced) wavingArm.rotation.z = -2.5;
       invalidate();
-    });
+    }
+    on($('#gh-greet'), 'click', greet);
+    on(astroButton, 'click', greet);
     on(motionQuery, 'change', () => {
       reduced = motionQuery.matches; paused = reduced; motionButton.disabled = reduced;
       if (reduced) { intro = 2; buildBars(); cameraTransition = null; }
@@ -297,11 +345,25 @@
       const dt = lastFrame ? Math.min(0.06, (now - lastFrame) / 1000) : 1 / 30; lastFrame = now;
       if (moving) {
         elapsed += dt;
+        if (orbitEnabled && view === 'orbit' && !cameraTransition && !pointerDown) {
+          const offset=camera.position.clone().sub(controls.target);
+          offset.applyAxisAngle(new T.Vector3(0,1,0),dt*0.055);
+          camera.position.copy(controls.target).add(offset); camera.lookAt(controls.target);
+        }
+        destinations.forEach((d,i)=>{
+          const angle=d.phase+elapsed*0.075;
+          d.mesh.position.set(Math.cos(angle)*14, 2.3+Math.sin(elapsed+i)*0.25, Math.sin(angle)*6.7);
+          d.caption.position.copy(d.mesh.position); d.caption.position.y+=1.15;
+          d.mesh.rotation.y+=dt*0.35;
+        });
         if (intro < 1.7) { intro += dt; buildBars(); }
         satellite.position.set(Math.cos(elapsed * 0.15) * 14.8, -0.9, Math.sin(elapsed * 0.15) * 7);
         planet.rotation.y = Math.sin(elapsed * 0.12) * 0.12;
         stars.rotation.y = Math.sin(elapsed * 0.015) * 0.018;
-        astro.position.y = 2.3 + Math.sin(elapsed * 1.2) * 0.2;
+        astro.position.y = 2.3 + Math.sin(elapsed * 1.2) * 0.3;
+        astro.position.x = -spanX / 2 - 1.5 + Math.sin(elapsed * 0.25)*0.6;
+        if (greeting > 0 && flight === 2) astro.rotation.x = Math.sin((2.6-greeting)/2.6*Math.PI)*Math.PI*2;
+        else astro.rotation.x = 0;
         astro.rotation.z = Math.sin(elapsed * 0.7) * 0.06;
         flame.scale.y = 1 + Math.sin(elapsed * 7) * 0.15;
         if (greeting > 0) {
@@ -315,7 +377,7 @@
         camera.position.lerpVectors(cameraTransition.from, cameraTransition.to, ease); controls.update();
         if (t === 1) cameraTransition = null;
       }
-      selection.visible = intro >= 1.6;
+      selection.visible = hasData && intro >= 1.6;
       renderer.render(scene, camera);
       if (moving) invalidate(); else lastFrame = 0;
     }
@@ -328,6 +390,7 @@
         for (const mat of object.material ? (Array.isArray(object.material) ? object.material : [object.material]) : []) { materials.add(mat); if (mat.map) textures.add(mat.map); }
       });
       textures.forEach(t => t.dispose()); geometries.forEach(g => g.dispose()); materials.forEach(m => m.dispose()); renderer.dispose();
+      navigation.remove(); detail.remove();
       delete container._githubScene;
     }
     on(window, 'pagehide', event => { if (event.persisted) stop(); else dispose(); });

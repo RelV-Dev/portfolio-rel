@@ -4128,6 +4128,7 @@ function getPlaceholderColor($icon_type) {
           <button type="button" id="gh-reset" aria-label="Kembalikan sudut pandang awal" title="Reset sudut pandang">↺</button>
           <button type="button" id="gh-motion" aria-pressed="false">Jeda</button>
         </div>
+        <div class="gh-data-state"><span id="gh-data-status" role="status">Profil siap dijelajahi · menunggu data GitHub</span><button type="button" id="gh-data-retry" hidden>Coba lagi</button></div>
         <div class="gh-stage-footer"><span id="gh-interaction-hint">Seret untuk memutar · pilih batang untuk detail</span><div class="gh-legend" aria-label="Warna dan tinggi menunjukkan jumlah kontribusi"><span>Sedikit</span><i></i><i></i><i></i><i></i><i></i><span>Banyak</span></div></div>
         <div class="gh-inspector" hidden>
           <div class="gh-day-readout" aria-live="polite" aria-atomic="true"><span id="gh-day-date">Pilih hari</span><strong id="gh-day-count">—</strong></div>
@@ -5894,12 +5895,12 @@ function getPlaceholderColor($icon_type) {
     }
     function loadGithubDependencies() {
       if (!githubLoadPromise) githubLoadPromise = (async () => {
-        const base='https://cdn.jsdelivr.net/npm/three@0.128.0/';
+        const base='/assets/three-r128/';
         await Promise.all([
           loadGithubScript('/github-scene.js'),
           (async()=>{
-            await loadGithubScript(base+'build/three.min.js');
-            await loadGithubScript(base+'examples/js/controls/OrbitControls.js');
+            await loadGithubScript(base+'three.min.js');
+            await loadGithubScript(base+'OrbitControls.js');
           })()
         ]);
       })().catch(error=>{githubLoadPromise=null;throw error;});
@@ -5928,21 +5929,42 @@ function getPlaceholderColor($icon_type) {
       githubLoadingStatus.textContent='Menyiapkan orbit kontribusi…';
       githubContainer.replaceChildren(githubLoadingStatus);
       try {
-        const [data]=await Promise.all([
-          (async()=>{
-            const response=await fetch('https://github-stats-api-tau.vercel.app/api/github-stats?username=relv-dev', {signal:AbortSignal.timeout(12000)});
-            if (!response.ok) throw new Error('GitHub data unavailable');
-            const data=await response.json();
-            if (!Array.isArray(data.contributionGraph)) throw new Error('Invalid GitHub data');
-            return data;
-          })(),
-          loadGithubDependencies()
-        ]);
-        document.getElementById('gh-username').textContent=`@${data.username}`;
-        document.getElementById('gh-repos').textContent=data.totalRepos;
-        document.getElementById('gh-commits').textContent=data.totalCommits;
-        document.getElementById('gh-contributions').textContent=data.contributionsCurrentYear;
-        window.PortfolioGithubScene.mount(githubContainer, data);
+        // Scene creation does not wait for the remote statistics API.
+        const fetchData=async()=>{
+          try {
+            const cached=JSON.parse(sessionStorage.getItem('relv-github-v1') || 'null');
+            if (cached && Date.now()-cached.time < 300000 && Array.isArray(cached.data?.contributionGraph)) return cached.data;
+          } catch (_) { /* Storage may be disabled. */ }
+          const response=await fetch('https://github-stats-api-tau.vercel.app/api/github-stats?username=relv-dev', {signal:AbortSignal.timeout(10000)});
+          if (!response.ok) throw new Error('GitHub data unavailable');
+          const data=await response.json();
+          if (!Array.isArray(data.contributionGraph)) throw new Error('Invalid GitHub data');
+          try { sessionStorage.setItem('relv-github-v1',JSON.stringify({time:Date.now(),data})); } catch (_) {}
+          return data;
+        };
+        const pendingData=fetchData().then(data=>({data}),error=>({error}));
+        await loadGithubDependencies();
+        window.PortfolioGithubScene.mount(githubContainer, {contributionGraph:[],pending:true});
+        const status=document.getElementById('gh-data-status');
+        const retry=document.getElementById('gh-data-retry');
+        const applyData=result=>{
+          if (result.error) { status.textContent='Data GitHub belum tersedia. Semesta profil tetap bisa dijelajahi.'; retry.hidden=false; return; }
+          const data=result.data;
+          document.getElementById('gh-username').textContent=`@${data.username || 'RelV-Dev'}`;
+          for (const [id,key] of [['gh-repos','totalRepos'],['gh-commits','totalCommits'],['gh-contributions','contributionsCurrentYear']]) {
+            document.getElementById(id).textContent=Number.isFinite(Number(data[key])) ? Number(data[key]).toLocaleString('id-ID') : '—';
+          }
+          githubContainer._githubScene?.dispose();
+          window.PortfolioGithubScene.mount(githubContainer, data);
+          status.textContent=data.contributionGraph.length ? 'Data GitHub siap · pilih planet atau hari kontribusi' : 'Belum ada data kontribusi dari GitHub.';
+          retry.hidden=true;
+        };
+        pendingData.then(applyData);
+        retry.onclick=async()=>{
+          retry.disabled=true; status.textContent='Memuat ulang data GitHub…';
+          try { applyData({data:await fetchData()}); } catch(error) { applyData({error}); }
+          finally { retry.disabled=false; }
+        };
         githubInitialized=true;
       } catch(error) {
         console.warn('GitHub visualization unavailable:',error.message);

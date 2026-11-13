@@ -181,3 +181,15 @@ footer .copyright { padding-top:18px; }
  #testimonials,#guestbook { padding-top:24px; padding-bottom:24px; }
  #contact { padding-top:30px; padding-bottom:30px; }
 }
+.gh-destinations { display:flex; flex-wrap:wrap; gap:6px; padding:104px 24px 0; position:relative; z-index:3; }
+.gh-destinations button,.gh-data-state button,.gh-destination-detail button { background:#162c39; color:#c4e9e0; border:1px solid #89d1c43b; border-radius:16px; padding:8px 12px; font:11px var(--font-main); cursor:pointer; }
+.gh-destinations button[aria-pressed=true] { background:#305b54; color:#fff; }
+.gh-destination-detail { position:relative; padding:18px 24px; margin:0 20px 18px; background:#152635; border:1px solid #9cdbcc30; border-radius:12px; font-size:12px; line-height:1.7; color:#bcd0df; }
+.gh-destination-detail[hidden] { display:none; }
+.gh-destination-detail strong { color:#c6f1df; font-size:15px; }.gh-destination-detail p { margin:8px 0 12px; }
+.gh-destination-detail a { color:#96e7d6; margin-right:20px; }
+.gh-data-state { padding:0 24px 18px; color:#9fbac8; font-size:11px; line-height:1.7; }
+.gh-data-state button { margin-left:8px; }
+.gh-observatory:has(.gh-destinations) .gh-greeting { top:12px; }
+.gh-toolbar button:disabled { opacity:.65; cursor:default; }
+@media(max-width:760px) { .gh-destinations { padding:100px 16px 0; }.gh-data-state { padding:0 18px 18px; } }
