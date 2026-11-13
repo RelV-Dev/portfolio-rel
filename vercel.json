@@ -18,6 +18,10 @@
   },
   "routes": [
     {
+      "src": "/github-scene.js",
+      "dest": "/github-scene.js"
+    },
+    {
       "src": "/assets/icons/(icons.css|LICENSE.txt)",
       "dest": "/assets/icons/$1"
     },

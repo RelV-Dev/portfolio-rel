@@ -100,7 +100,7 @@ or personal roles. Contact actions close the page. The hero introduction avoids
 asserting an unconfirmed current school status; historical timeline dates remain
 unchanged pending owner confirmation.
 
-There is no blocking preloader. Three.js and GitHub data load in parallel when the canvas approaches the viewport (600px ahead). Reduced-motion and data-saver users retain a manual load button. Independent extensions download concurrently after their base classes, and repeated scrolling reuses the initialized scene;
+There is no blocking preloader. Three.js and GitHub data load in parallel when the canvas approaches the viewport (600px ahead). Reduced-motion and data-saver users retain a manual load button. The local scene downloads alongside Three.js; only OrbitControls is needed afterward. Repeated scrolling reuses the initialized scene;
 rendering pauses offscreen/in hidden tabs, pixel ratio is capped, and ambient
 sound is disabled. Guestbook offers pause/resume and respects reduced motion.
 Dialogs support keyboard activation, Escape, focus trapping and focus restoration.
@@ -122,3 +122,12 @@ Logs for the missing variable names (values are never logged). If its code is
 `rate_limit_unavailable`, check that migration 001 has created
 `consume_public_rate_limit`, and that the service role key belongs to this
 Supabase project. Do not disable the limiter to resolve a configuration error.
+
+## Contribution Orbit
+
+The GitHub scene lives in `github-scene.js`: an instanced calendar city with
+a layered deck, orbital tracks, a ringed planet, and a waving astronaut.
+Camera presets, pause, and a keyboard date slider expose the actual API data.
+Missing calendar days stay empty. Rendering stops offscreen and in hidden tabs;
+reduced-motion renders a complete static scene with usable camera controls.
+Closing sections use compact spacing, including empty testimonials/guestbook.
